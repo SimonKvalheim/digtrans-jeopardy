@@ -46,18 +46,21 @@ body {
 .stage-viewport {
   position: fixed;
   inset: 0;
-  display: grid;
-  place-items: center;
   overflow: hidden;
   background: #000;
 }
 
+/* Anchored top-left with a top-left transform origin, then scaled and offset
+   in pixels by Stage.tsx. Percentage translates and grid centring both misplace
+   a scaled element; this is the one arrangement with no ambiguity. */
 .stage {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: var(--stage-w);
   height: var(--stage-h);
-  transform-origin: center center;
+  transform-origin: 0 0;
   background: var(--board-bg);
-  position: relative;
 }
 
 /* ── The board grid ──────────────────────────────────────────────────────────
@@ -86,11 +89,11 @@ body {
   font-size: 38px;
 }
 
+/* Columns and rows are set inline from the round's actual shape, so cutting
+   round 2 to four categories needs no CSS change. */
 .board__grid {
   flex: 1;
   display: grid;
-  /* One header row plus five tier rows. */
-  grid-template-rows: 132px repeat(5, 1fr);
   gap: 8px;
   min-height: 0;
 }
@@ -129,6 +132,10 @@ body {
 
 .board__tile--spent {
   background: var(--tile-bg-spent);
+}
+
+.board__tile--empty {
+  background: transparent;
 }
 
 /* ── Score strip ─────────────────────────────────────────────────────────── */

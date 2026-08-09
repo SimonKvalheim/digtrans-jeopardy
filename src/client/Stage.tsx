@@ -21,7 +21,12 @@ export function Stage({ children }: { children: ReactNode }) {
         window.innerWidth / STAGE_W,
         window.innerHeight / STAGE_H,
       )
-      el.style.transform = `scale(${scale})`
+      // Offset in pixels, not percentages: a percentage translate resolves
+      // against the element's unscaled 1920×1080 box, so it overshoots by
+      // exactly the scale factor and the board drifts off-centre.
+      const x = (window.innerWidth - STAGE_W * scale) / 2
+      const y = (window.innerHeight - STAGE_H * scale) / 2
+      el.style.transform = `translate(${x}px, ${y}px) scale(${scale})`
     }
 
     fit()

@@ -7,11 +7,16 @@ import type { BoardState } from '@shared/board-state.ts'
  */
 export function BoardGrid({ round }: { round: NonNullable<BoardState['round']> }) {
   const columns = round.categories.length
+  const rows = rowsOf(round.categories)
 
   return (
     <div
       className="board__grid"
-      style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}
+      style={{
+        gridTemplateColumns: `repeat(${columns}, 1fr)`,
+        // A header row plus one row per price actually present.
+        gridTemplateRows: `132px repeat(${rows.length}, 1fr)`,
+      }}
     >
       {round.categories.map((category) => (
         <div key={category.id} className="board__category">
@@ -22,9 +27,9 @@ export function BoardGrid({ round }: { round: NonNullable<BoardState['round']> }
         </div>
       ))}
 
-      {/* Column-major would read wrong: the grid fills row by row, so tiles are
-          emitted tier by tier across all categories. */}
-      {rowsOf(round.categories).map((row, tierIndex) =>
+      {/* The grid fills row by row, so tiles are emitted tier by tier across
+          all categories rather than category by category. */}
+      {rows.map((row, rowIndex) =>
         row.map((tile, columnIndex) =>
           tile ? (
             <div
@@ -34,9 +39,11 @@ export function BoardGrid({ round }: { round: NonNullable<BoardState['round']> }
               {tile.spent ? '' : tile.value}
             </div>
           ) : (
+            // A price this category simply does not have. Left blank rather
+            // than greyed, so it does not read as an already-played tile.
             <div
-              key={`gap-${tierIndex}-${columnIndex}`}
-              className="board__tile board__tile--spent"
+              key={`gap-${rowIndex}-${columnIndex}`}
+              className="board__tile board__tile--empty"
             />
           ),
         ),
@@ -46,12 +53,23 @@ export function BoardGrid({ round }: { round: NonNullable<BoardState['round']> }
 }
 
 /**
- * Transposes categories-of-tiles into rows-of-tiles, padding short categories
- * so a category with a missing tier does not shift every tile after it.
+ * Transposes categories-of-tiles into rows-of-tiles, keyed by **tier** rather
+ * than by array position.
+ *
+ * This matters: indexing by position means a category missing one tier pulls
+ * every tile below it up a row, so the 300s stop lining up across the board.
+ * A row is a price, so a category without that price leaves a hole.
  */
 function rowsOf(categories: NonNullable<BoardState['round']>['categories']) {
-  const height = Math.max(...categories.map((c) => c.tiles.length), 0)
-  return Array.from({ length: height }, (_, tierIndex) =>
-    categories.map((category) => category.tiles[tierIndex] ?? null),
+  const maxTier = Math.max(
+    ...categories.flatMap((c) => c.tiles.map((t) => t.tier)),
+    0,
   )
+
+  return Array.from({ length: maxTier }, (_, rowIndex) => {
+    const tier = rowIndex + 1
+    return categories.map(
+      (category) => category.tiles.find((t) => t.tier === tier) ?? null,
+    )
+  })
 }
