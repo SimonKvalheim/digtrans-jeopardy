@@ -50,9 +50,13 @@ const grid = () => {
   for (let tier = 1; tier <= 5; tier += 1) {
     for (let col = 0; col < 6; col += 1) {
       const isSpent = spent.has(`${col}-${tier - 1}`)
+      const sips = [2, 4, 6, 8, 10][tier - 1]
       cells.push(
         `<div class="board__tile${isSpent ? ' board__tile--spent' : ''}">${
-          isSpent ? '' : tier * 100
+          isSpent
+            ? ''
+            : `<span class="board__tile-value">${tier * 100}</span>` +
+              `<span class="board__tile-sips">${sips} slurker</span>`
         }</div>`,
       )
     }
@@ -88,7 +92,9 @@ const clue = ({
 <div class="clue">
   <div class="clue__header">
     <span>${category}</span>
-    <span class="clue__value">${value}</span>
+    <span class="clue__value"><span class="clue__value-label">${
+      String(value).includes('DOBLE') ? 'Innsats' : 'Verdi'
+    }</span>${String(value).replace('DAGENS DOBLE · ', '')}</span>
   </div>
   ${extras}
   <p class="clue__prompt${emoji ? ' clue__prompt--emoji' : ''}">${prompt}</p>

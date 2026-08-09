@@ -40,8 +40,13 @@ export function ClueView({
           {clue.categoryName}
           {clue.fromLabel ? ` · ${clue.fromLabel}` : ''}
         </span>
+        {/* "Innsats" is reserved for a real wager. An ordinary tile has a
+            value the team never chose, so calling it a stake would be wrong. */}
         <span className="clue__value">
-          {clue.isDailyDouble ? `DAGENS DOBLE · ${clue.wager ?? 0}` : clue.value}
+          <span className="clue__value-label">
+            {clue.isDailyDouble ? 'Innsats' : 'Verdi'}
+          </span>
+          {clue.isDailyDouble ? (clue.wager ?? 0) : clue.value}
         </span>
       </div>
 

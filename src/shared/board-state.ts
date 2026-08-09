@@ -13,6 +13,8 @@ export interface BoardTile {
   tier: number
   /** tier × the round's valueStep, precomputed so the board never does maths. */
   value: number
+  /** Sips to attempt this tile, shown before it is picked. Never enforced. */
+  sips: number
   /** Spent tiles are greyed out and cannot be picked again. */
   spent: boolean
 }

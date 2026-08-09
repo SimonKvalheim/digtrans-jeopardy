@@ -36,7 +36,15 @@ export function BoardGrid({ round }: { round: NonNullable<BoardState['round']> }
               key={tile.id}
               className={`board__tile${tile.spent ? ' board__tile--spent' : ''}`}
             >
-              {tile.spent ? '' : tile.value}
+              {tile.spent ? null : (
+                <>
+                  <span className="board__tile-value">{tile.value}</span>
+                  {/* The buy-in is on the tile, not just on the open clue, so a
+                      team knows what attempting costs before it picks. The app
+                      displays sips and never tracks or enforces them. */}
+                  <span className="board__tile-sips">{tile.sips} slurker</span>
+                </>
+              )}
             </div>
           ) : (
             // A price this category simply does not have. Left blank rather

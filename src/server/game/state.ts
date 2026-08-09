@@ -48,6 +48,8 @@ export async function buildBoardState(code: string): Promise<BoardState | null> 
     .where(eq(schema.teams.gameId, game.id))
     .orderBy(asc(schema.teams.seat))
 
+  const drinkScale = pack?.drinkScale ?? []
+
   let round: BoardState['round'] = null
 
   if (game.activeRoundId) {
@@ -101,6 +103,7 @@ export async function buildBoardState(code: string): Promise<BoardState | null> 
           id: row.gameClueId,
           tier: row.tier,
           value: valueForTier(row.tier as Tier, activeRound.valueStep),
+          sips: sipsForTier(row.tier as Tier, drinkScale),
           spent: SPENT_PHASES.has(row.phase),
         })
       }
@@ -113,8 +116,6 @@ export async function buildBoardState(code: string): Promise<BoardState | null> 
       }
     }
   }
-
-  const drinkScale = pack?.drinkScale ?? []
 
   return {
     gameId: game.id,
