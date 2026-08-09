@@ -32,6 +32,8 @@ export interface BoardTeam {
 }
 
 export interface BoardState {
+  /** Needed to join the right socket room. */
+  gameId: string
   code: string
   phase: string
   round: {
@@ -70,5 +72,10 @@ export interface BoardState {
     prompt: string
     /** Sips to attempt this tier, from the pack's drinkScale. */
     sips: number
+    /**
+     * Who won the buzz race and by how much. The margin is shown on the TV
+     * deliberately — it is what stops the argument before it starts.
+     */
+    stealWinner: { teamName: string; marginMs: number } | null
   } | null
 }

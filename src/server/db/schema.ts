@@ -165,6 +165,8 @@ export const gameClues = pgTable(
     ownerTeamId: uuid(),
     /** Randomised per game, so nobody learns positions from a previous run. */
     isDailyDouble: boolean().notNull().default(false),
+    /** Whoever won the buzz race for the single steal on this clue. */
+    stealTeamId: uuid(),
     wager: integer(),
     /**
      * When the current phase's countdown runs out. Stored as an absolute

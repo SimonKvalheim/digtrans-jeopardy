@@ -8,6 +8,9 @@ import { db, hasDatabase, schema } from './db/index.ts'
 import { adminRouter } from './routes/admin.ts'
 import { hostRouter } from './routes/host.ts'
 import { boardRouter } from './routes/board.ts'
+import { teamRouter } from './routes/team.ts'
+import { register, send, notifyChanged } from './ws/hub.ts'
+import { recordBuzz, tryBuzz } from './game/buzz.ts'
 
 // Before anything is served. A failed migration exits non-zero, the health
 // check never passes, and Railway keeps the previous deployment running.
@@ -46,6 +49,7 @@ app.get('/readyz', async (_req, res) => {
 app.use('/api/admin', adminRouter)
 app.use('/api/host', hostRouter)
 app.use('/api/board', boardRouter)
+app.use('/api/team', teamRouter)
 
 const httpServer = createServer(app)
 
@@ -53,7 +57,46 @@ const httpServer = createServer(app)
 const wss = new WebSocketServer({ server: httpServer, path: '/ws' })
 
 wss.on('connection', (socket) => {
-  socket.send(JSON.stringify({ type: 'hello' }))
+  const client = register(socket)
+  send(client, { type: 'hello' })
+
+  socket.on('message', async (raw) => {
+    // Arrival time is taken before anything else touches this message.
+    let msg: { type?: string; gameId?: string; role?: string; teamId?: string }
+    try {
+      msg = JSON.parse(String(raw))
+    } catch {
+      return
+    }
+
+    if (msg.type === 'identify') {
+      client.gameId = msg.gameId
+      client.teamId = msg.teamId
+      client.role =
+        msg.role === 'board' || msg.role === 'host' || msg.role === 'team'
+          ? msg.role
+          : 'unknown'
+      send(client, { type: 'identified' })
+      return
+    }
+
+    if (msg.type === 'buzz' && client.gameId && client.teamId) {
+      // Decided synchronously; see game/buzz.ts. Persistence follows and
+      // cannot change the outcome.
+      const result = tryBuzz(client.gameId, client.teamId)
+      if (!result) {
+        send(client, { type: 'buzz_rejected' })
+        return
+      }
+      send(client, {
+        type: 'buzz_result',
+        won: result.won,
+        marginMs: result.marginMs,
+      })
+      await recordBuzz(result)
+      if (result.won) notifyChanged(client.gameId)
+    }
+  })
 })
 
 if (isProd) {

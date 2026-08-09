@@ -8,6 +8,7 @@ import { sipsForTier, valueForTier } from '../../shared/scoring.ts'
 import type { Tier } from '../../shared/pack-schema.ts'
 import { db, schema } from '../db/index.ts'
 import { applyExpiry } from './loop.ts'
+import { buzzOrder } from './buzz.ts'
 
 /** A tile is spent once its clue has been resolved one way or another. */
 const SPENT_PHASES = new Set(['revealed', 'done'])
@@ -116,6 +117,7 @@ export async function buildBoardState(code: string): Promise<BoardState | null> 
   const drinkScale = pack?.drinkScale ?? []
 
   return {
+    gameId: game.id,
     code: game.code,
     phase: game.phase,
     round,
@@ -142,6 +144,7 @@ async function buildActiveClue(
       phase: schema.gameClues.phase,
       ownerTeamId: schema.gameClues.ownerTeamId,
       isDailyDouble: schema.gameClues.isDailyDouble,
+      stealTeamId: schema.gameClues.stealTeamId,
       wager: schema.gameClues.wager,
       phaseEndsAt: schema.gameClues.phaseEndsAt,
       tier: schema.clues.tier,
@@ -176,5 +179,23 @@ async function buildActiveClue(
     kind: row.kind,
     prompt: row.payload.prompt,
     sips: sipsForTier(row.tier as Tier, drinkScale),
+    stealWinner: await buildStealWinner(row.id, row.stealTeamId),
+  }
+}
+
+/** The winning buzz and its margin over the next team, straight from buzzes. */
+async function buildStealWinner(gameClueId: string, stealTeamId: string | null) {
+  if (!stealTeamId) return null
+
+  const order = await buzzOrder(gameClueId)
+  const winner = order.find((b) => b.won)
+  if (!winner) return null
+
+  // Margin over the runner-up, not over the winner itself — "won by 34 ms"
+  // only means something relative to whoever came second.
+  const runnerUp = order.find((b) => !b.won)
+  return {
+    teamName: winner.teamName,
+    marginMs: runnerUp ? runnerUp.marginMs - winner.marginMs : 0,
   }
 }

@@ -57,6 +57,16 @@ export function ClueView({
         {clue.prompt}
       </p>
 
+      {/* The margin is shown on purpose: it is what stops the argument. */}
+      {clue.stealWinner ? (
+        <p className="clue__buzz-winner">
+          {clue.stealWinner.teamName} stjeler
+          {clue.stealWinner.marginMs > 0
+            ? ` — ${clue.stealWinner.marginMs} ms foran`
+            : ''}
+        </p>
+      ) : null}
+
       {clue.phaseEndsAt ? (
         <Countdown
           endsAt={clue.phaseEndsAt}

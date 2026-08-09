@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { BoardState } from '@shared/board-state.ts'
 import { Stage } from '../Stage.tsx'
 import { BoardGrid } from '../board/BoardGrid.tsx'
 import { ScoreStrip } from '../board/ScoreStrip.tsx'
 import { ClueView } from '../board/ClueView.tsx'
+import { useGameSocket } from '../team/useGameSocket.ts'
 
 /**
  * The TV. Zero interaction: it is opened once, fullscreened, and left alone.
@@ -16,6 +17,9 @@ export function BoardScreen() {
   const code = new URLSearchParams(window.location.search).get('code') ?? ''
   const [state, setState] = useState<BoardState | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  const [reloadKey, setReloadKey] = useState(0)
+  const reload = useCallback(() => setReloadKey((n) => n + 1), [])
 
   useEffect(() => {
     if (!code) {
@@ -49,7 +53,17 @@ export function BoardScreen() {
       cancelled = true
       clearInterval(timer)
     }
-  }, [code])
+  }, [code, reloadKey])
+
+  // Polling above is the safety net; this is what makes a buzz land on the TV
+  // immediately rather than up to two seconds later.
+  useGameSocket({
+    role: 'board',
+    gameId: state?.gameId,
+    onMessage: (msg) => {
+      if (msg.type === 'changed') void reload()
+    },
+  })
 
   if (error) {
     return (

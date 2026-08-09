@@ -1,0 +1,1 @@
+ALTER TABLE "game_clues" ADD COLUMN "stealTeamId" uuid;

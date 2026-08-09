@@ -15,6 +15,13 @@
       "when": 1786299329870,
       "tag": "0001_parallel_magus",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786299860197,
+      "tag": "0002_smiling_sentry",
+      "breakpoints": true
     }
   ]
 }

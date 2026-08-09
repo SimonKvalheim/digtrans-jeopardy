@@ -8,6 +8,8 @@ import {
 import type { Tier } from '../../shared/pack-schema.ts'
 import { db, schema } from '../db/index.ts'
 import { applyScore } from './score.ts'
+import { closeSteal, openSteal } from './buzz.ts'
+import { notifyChanged } from '../ws/hub.ts'
 
 /**
  * The clue state machine (PRD §4.1), driven entirely from the host console.
@@ -81,6 +83,9 @@ export async function applyExpiry(code: string) {
 
     if (won.length === 0) return null
 
+    openSteal(game.id, row.id)
+    notifyChanged(game.id)
+
     // Timing out is treated exactly as an owner miss: half the value.
     const value = valueForTier(row.tier as Tier, row.valueStep)
     if (row.ownerTeamId) {
@@ -109,6 +114,8 @@ export async function applyExpiry(code: string) {
       .returning({ id: schema.gameClues.id })
 
     if (won.length === 0) return null
+    closeSteal(game.id)
+    notifyChanged(game.id)
     // Triple stumper: nobody loses points, the room drinks instead.
     return 'no_steal'
   }
@@ -184,6 +191,7 @@ export async function loadActiveClue(code: string) {
       phase: schema.gameClues.phase,
       phaseEndsAt: schema.gameClues.phaseEndsAt,
       ownerTeamId: schema.gameClues.ownerTeamId,
+      stealTeamId: schema.gameClues.stealTeamId,
       isDailyDouble: schema.gameClues.isDailyDouble,
       wager: schema.gameClues.wager,
       tier: schema.clues.tier,
@@ -253,6 +261,8 @@ export async function openClue(code: string, gameClueId: string) {
       .set({ activeClueId: gameClueId, phase: 'clue' })
       .where(eq(schema.games.id, game.id))
 
+    closeSteal(game.id)
+    notifyChanged(game.id)
     return { gameClueId, phase, isDailyDouble: gameClue.isDailyDouble }
   })
 }
@@ -294,17 +304,17 @@ export async function resolveClue(
       nextPhase = active.isDailyDouble ? 'revealed' : 'steal_open'
       break
     case 'steal_correct':
-      if (!teamId) throw new Error('Stjeling krever et lag')
-      delta = scoreDelta({ kind: 'steal', correct: true }, value)
-      scoredTeamId = teamId
-      nextPhase = 'done'
+    case 'steal_wrong': {
+      // Whoever won the buzz race is the default; the host may still override
+      // it, because a console that cannot correct the machine is a trap.
+      const stealer = teamId ?? active.stealTeamId
+      if (!stealer) throw new Error('Stjeling krever et lag')
+      const correct = outcome === 'steal_correct'
+      delta = scoreDelta({ kind: 'steal', correct }, value)
+      scoredTeamId = stealer
+      nextPhase = correct ? 'done' : 'revealed'
       break
-    case 'steal_wrong':
-      if (!teamId) throw new Error('Stjeling krever et lag')
-      delta = scoreDelta({ kind: 'steal', correct: false }, value)
-      scoredTeamId = teamId
-      nextPhase = 'revealed'
-      break
+    }
     case 'no_steal':
       // Triple stumper: nobody loses points, the room drinks instead.
       delta = 0
@@ -337,6 +347,10 @@ export async function resolveClue(
         nextPhase === 'steal_open' ? new Date(Date.now() + STEAL_MS) : null,
     })
     .where(eq(schema.gameClues.id, active.gameClueId))
+
+  if (nextPhase === 'steal_open') openSteal(game.id, active.gameClueId)
+  else closeSteal(game.id)
+  notifyChanged(game.id)
 
   return { outcome, delta, teamId: scoredTeamId, phase: nextPhase }
 }
@@ -372,6 +386,9 @@ export async function closeClue(code: string) {
       .update(schema.games)
       .set({ activeClueId: null, phase: 'board', turnTeamId: nextTurn })
       .where(eq(schema.games.id, game.id))
+
+    closeSteal(game.id)
+    notifyChanged(game.id)
 
     return { turnTeamId: nextTurn }
   })
