@@ -1,0 +1,85 @@
+/* The Jeopardy palette is specific and load-bearing for the whole look, so it
+   lives here as custom properties rather than inside a utility framework. */
+:root {
+  --jeopardy-blue: #060ce9;
+  --board-bg: #0b1064;
+  --tile-bg: #060ce9;
+  --tile-bg-spent: #030747;
+  --gold: #d69f4c;
+  --gold-bright: #ffcc00;
+  --ink: #ffffff;
+  --ink-dim: #b9bfe8;
+  --negative: #ff5a5a;
+
+  /* The board is designed at exactly this size and scaled to fit the TV. */
+  --stage-w: 1920px;
+  --stage-h: 1080px;
+
+  --font-display: 'Anton', 'Haettenschweiler', 'Arial Narrow', system-ui, sans-serif;
+  --font-ui: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: #000;
+  color: var(--ink);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  height: 100%;
+}
+
+/* ── Board (TV) ──────────────────────────────────────────────────────────────
+   Fixed 16:9 stage, letterboxed and scaled. Everything inside the stage is
+   authored in absolute pixels against 1920×1080, which is why the board is
+   explicitly not responsive (PRD: "it is a TV"). */
+.stage-viewport {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #000;
+}
+
+.stage {
+  width: var(--stage-w);
+  height: var(--stage-h);
+  transform-origin: center center;
+  background: var(--board-bg);
+  position: relative;
+}
+
+/* ── Phone surfaces (host + team) ────────────────────────────────────────── */
+.phone {
+  min-height: 100%;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
+  background: var(--board-bg);
+}
+
+.phone__body {
+  padding: 16px;
+}
+
+h1,
+h2 {
+  font-family: var(--font-display);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  margin: 0 0 12px;
+}
+
+.muted {
+  color: var(--ink-dim);
+}
