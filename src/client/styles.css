@@ -60,6 +60,125 @@ body {
   position: relative;
 }
 
+/* ── The board grid ──────────────────────────────────────────────────────────
+   Authored against the 1920×1080 stage. The grid stretches, so cutting round 2
+   to four categories needs no CSS change. */
+.board {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+}
+
+.board__notice {
+  margin: auto;
+  text-align: center;
+}
+
+.board__notice h1 {
+  font-size: 110px;
+  color: var(--gold-bright);
+}
+
+.board__notice p {
+  font-size: 38px;
+}
+
+.board__grid {
+  flex: 1;
+  display: grid;
+  /* One header row plus five tier rows. */
+  grid-template-rows: 132px repeat(5, 1fr);
+  gap: 8px;
+  min-height: 0;
+}
+
+.board__category {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background: var(--tile-bg);
+  font-family: var(--font-display);
+  font-size: 34px;
+  line-height: 1.05;
+  text-align: center;
+  text-transform: uppercase;
+  text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.55);
+}
+
+.board__category-pair {
+  font-size: 24px;
+  font-style: normal;
+  color: var(--gold);
+}
+
+.board__tile {
+  display: grid;
+  place-items: center;
+  background: var(--tile-bg);
+  font-family: var(--font-display);
+  font-size: 86px;
+  color: var(--gold-bright);
+  text-shadow: 5px 5px 0 rgba(0, 0, 0, 0.6);
+}
+
+.board__tile--spent {
+  background: var(--tile-bg-spent);
+}
+
+/* ── Score strip ─────────────────────────────────────────────────────────── */
+.score-strip {
+  display: flex;
+  gap: 8px;
+  height: 150px;
+}
+
+.score-strip--empty {
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+}
+
+.score-strip__team {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--tile-bg-spent);
+  border-bottom: 8px solid transparent;
+}
+
+/* Whose turn it is to pick — the one piece of state the room argues about. */
+.score-strip__team--turn {
+  border-bottom-color: var(--gold-bright);
+  background: var(--tile-bg);
+}
+
+.score-strip__name {
+  font-family: var(--font-display);
+  font-size: 30px;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 0 8px;
+}
+
+.score-strip__score {
+  font-family: var(--font-display);
+  font-size: 58px;
+  color: var(--ink);
+}
+
+.score-strip__score--negative {
+  color: var(--negative);
+}
+
 /* ── Phone surfaces (host + team) ────────────────────────────────────────── */
 .phone {
   min-height: 100%;

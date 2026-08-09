@@ -6,6 +6,8 @@ import { env, isProd } from './env.ts'
 import { runMigrations } from './db/migrate.ts'
 import { db, hasDatabase, schema } from './db/index.ts'
 import { adminRouter } from './routes/admin.ts'
+import { hostRouter } from './routes/host.ts'
+import { boardRouter } from './routes/board.ts'
 
 // Before anything is served. A failed migration exits non-zero, the health
 // check never passes, and Railway keeps the previous deployment running.
@@ -29,8 +31,10 @@ app.get('/readyz', async (_req, res) => {
     return
   }
   try {
-    const rows = await db().select({ slug: schema.packs.slug }).from(schema.packs)
-    res.json({ ok: true, db: 'up', packs: rows.map((r) => r.slug) })
+    // A count, not the slugs: this route is public, and pack names are a hint
+    // about the content even though they are not the answers.
+    const rows = await db().select({ id: schema.packs.id }).from(schema.packs)
+    res.json({ ok: true, db: 'up', packs: rows.length })
   } catch (error) {
     res.status(503).json({
       ok: false,
@@ -40,6 +44,8 @@ app.get('/readyz', async (_req, res) => {
 })
 
 app.use('/api/admin', adminRouter)
+app.use('/api/host', hostRouter)
+app.use('/api/board', boardRouter)
 
 const httpServer = createServer(app)
 
