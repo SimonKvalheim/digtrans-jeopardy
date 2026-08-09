@@ -11,6 +11,7 @@ import {
   resolveClue,
   setTurn,
   setWager,
+  wagerLimit,
 } from '../game/loop.ts'
 import { buildBoardState } from '../game/state.ts'
 import { db, schema } from '../db/index.ts'
@@ -185,7 +186,11 @@ hostRouter.get('/games/:code/board', async (req, res) => {
 /** Clue content including the answer. This is why /host is PIN-gated. */
 hostRouter.get('/games/:code/active', async (req, res) => {
   try {
-    res.json({ active: await loadActiveClue(req.params.code) })
+    const [active, limit] = await Promise.all([
+      loadActiveClue(req.params.code),
+      wagerLimit(req.params.code),
+    ])
+    res.json({ active, wagerLimit: limit })
   } catch (error) {
     res.status(404).json({
       error: error instanceof Error ? error.message : 'Ukjent feil',

@@ -57,6 +57,8 @@ export interface BoardState {
     tier: number
     value: number
     isDailyDouble: boolean
+    /** Locked Daily Double wager, once the owning team has committed to it. */
+    wager: number | null
     ownerTeamId: string | null
     kind: string
     prompt: string

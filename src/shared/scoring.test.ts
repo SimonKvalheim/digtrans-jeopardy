@@ -79,6 +79,19 @@ test('daily double keeps the classic floor for a team in the red', () => {
   assert.equal(maxDailyDoubleWager(2400, 200), 2400)
 })
 
+test('the floor applies to any team below it, not only teams at or below zero', () => {
+  // This is the real-show rule: you may wager up to the GREATER of your score
+  // and the round's top clue value. So a team on 200 in round 1 may still
+  // wager 500.
+  //
+  // The PRD phrases the floor around the "at or below zero" case, which read
+  // literally would cap this team at 200. Pinned down here because the two
+  // readings differ on every low-scoring team, not just teams in the red.
+  assert.equal(maxDailyDoubleWager(200, 100), 500)
+  assert.equal(maxDailyDoubleWager(0, 100), 500)
+  assert.equal(maxDailyDoubleWager(900, 100), 900)
+})
+
 test('a team at or below zero does not play the final', () => {
   assert.equal(playsFinal(1), true)
   assert.equal(playsFinal(0), false)

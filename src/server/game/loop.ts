@@ -1,5 +1,10 @@
 import { and, asc, eq } from 'drizzle-orm'
-import { scoreDelta, valueForTier } from '../../shared/scoring.ts'
+import {
+  clampWager,
+  maxDailyDoubleWager,
+  scoreDelta,
+  valueForTier,
+} from '../../shared/scoring.ts'
 import type { Tier } from '../../shared/pack-schema.ts'
 import { db, schema } from '../db/index.ts'
 import { applyScore } from './score.ts'
@@ -227,15 +232,53 @@ export async function setTurn(code: string, teamId: string) {
   return { turnTeamId: teamId }
 }
 
-/** Daily Double wager, clamped server-side against the team's own score. */
+/**
+ * Locks the Daily Double wager, clamped server-side.
+ *
+ * The cap is the classic one (PRD §4.3): a team at or below zero may still
+ * wager up to the round's top clue value, because otherwise the tile is dead
+ * and the board stalls mid-round. The clamp lives here and not in the UI — the
+ * wager will eventually arrive from a team phone, and a number off a phone is
+ * never to be trusted.
+ */
 export async function setWager(code: string, wager: number) {
   const active = await loadActiveClue(code)
   if (!active) throw new Error('Ingen aktiv rute')
+  if (!active.isDailyDouble) throw new Error('Ruten er ikke en dagens doble')
+  if (active.phase !== 'dd_wager') throw new Error('Innsatsen er allerede låst')
+  if (!active.ownerTeamId) throw new Error('Ruten har ingen eier')
+
+  const [team] = await db()
+    .select({ score: schema.teams.score })
+    .from(schema.teams)
+    .where(eq(schema.teams.id, active.ownerTeamId))
+
+  if (!team) throw new Error('Fant ikke laget')
+
+  const max = maxDailyDoubleWager(team.score, active.valueStep)
+  const clamped = clampWager(wager, max)
 
   await db()
     .update(schema.gameClues)
-    .set({ wager, phase: 'dd_answer' })
+    .set({ wager: clamped, phase: 'dd_answer' })
     .where(eq(schema.gameClues.id, active.gameClueId))
 
-  return { wager }
+  return { wager: clamped, max, clamped: clamped !== Math.floor(wager) }
+}
+
+/** The legal range for the open Daily Double, so the console can show it. */
+export async function wagerLimit(code: string) {
+  const active = await loadActiveClue(code)
+  if (!active?.isDailyDouble || !active.ownerTeamId) return null
+
+  const [team] = await db()
+    .select({ score: schema.teams.score })
+    .from(schema.teams)
+    .where(eq(schema.teams.id, active.ownerTeamId))
+
+  if (!team) return null
+  return {
+    score: team.score,
+    max: maxDailyDoubleWager(team.score, active.valueStep),
+  }
 }

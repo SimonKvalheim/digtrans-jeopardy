@@ -206,6 +206,34 @@ body {
   margin: 0;
 }
 
+.clue__all-in {
+  margin: 0;
+  padding: 10px;
+  background: var(--gold-bright);
+  color: #1a1200;
+  font-family: var(--font-display);
+  font-size: 44px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+/* ── Wager panel (host) ──────────────────────────────────────────────────── */
+.wager__title {
+  color: var(--gold-bright);
+}
+
+.wager__quick {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0 12px;
+}
+
+.wager input {
+  margin-bottom: 16px;
+  font-size: 28px;
+  text-align: center;
+}
+
 /* ── Score strip ─────────────────────────────────────────────────────────── */
 .score-strip {
   display: flex;

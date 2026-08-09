@@ -23,6 +23,15 @@ export function ClueView({
     )
   }
 
+  // A team that wagered everything has earned the room's attention before it
+  // answers, not after. True Daily Double → the whole room drinks (PRD §4.4).
+  const allIn =
+    clue.isDailyDouble &&
+    clue.wager !== null &&
+    owner !== undefined &&
+    owner.score > 0 &&
+    clue.wager === owner.score
+
   return (
     <div className="clue">
       <div className="clue__header">
@@ -31,9 +40,13 @@ export function ClueView({
           {clue.fromLabel ? ` · ${clue.fromLabel}` : ''}
         </span>
         <span className="clue__value">
-          {clue.isDailyDouble ? 'DAGENS DOBLE' : clue.value}
+          {clue.isDailyDouble ? `DAGENS DOBLE · ${clue.wager ?? 0}` : clue.value}
         </span>
       </div>
+
+      {allIn ? (
+        <p className="clue__all-in">Ekte dagens doble — hele potten!</p>
+      ) : null}
 
       <p
         className={`clue__prompt${

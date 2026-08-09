@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { BoardState } from '@shared/board-state.ts'
 import { hostFetch } from './api.ts'
+import { WagerPanel, type WagerLimit } from './WagerPanel.tsx'
 
 export interface ActiveClue {
   gameClueId: string
@@ -26,11 +27,13 @@ export interface ActiveClue {
  */
 export function SporTab({
   active,
+  wagerLimit,
   board,
   code,
   onChanged,
 }: {
   active: ActiveClue | null
+  wagerLimit: WagerLimit | null
   board: BoardState
   code: string
   onChanged: () => void | Promise<void>
@@ -47,6 +50,21 @@ export function SporTab({
   const owner = board.teams.find((t) => t.id === active.ownerTeamId)
   const stealOpen = active.phase === 'steal_open'
   const finished = active.phase === 'done' || active.phase === 'revealed'
+
+  // The wager is blind and comes before any clue text — so this panel replaces
+  // the question entirely rather than sitting above it.
+  if (active.phase === 'dd_wager') {
+    return wagerLimit ? (
+      <WagerPanel
+        limit={wagerLimit}
+        teamName={owner?.name ?? 'Laget'}
+        code={code}
+        onChanged={onChanged}
+      />
+    ) : (
+      <p className="muted">Laster innsatsgrense…</p>
+    )
+  }
 
   const act = async (fn: () => Promise<unknown>) => {
     setBusy(true)
@@ -81,7 +99,9 @@ export function SporTab({
       <div className="spor__meta">
         <span>{active.categoryName}</span>
         <span className="spor__value">
-          {active.isDailyDouble ? 'DAGENS DOBLE' : active.value}
+          {active.isDailyDouble
+            ? `DOBLE · ${active.wager ?? 0}`
+            : active.value}
         </span>
       </div>
 

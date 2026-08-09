@@ -5,6 +5,7 @@ import { HostGate } from '../host/HostGate.tsx'
 import { PoengTab } from '../host/PoengTab.tsx'
 import { BrettTab } from '../host/BrettTab.tsx'
 import { SporTab, type ActiveClue } from '../host/SporTab.tsx'
+import type { WagerLimit } from '../host/WagerPanel.tsx'
 
 type Tab = 'brett' | 'spor' | 'poeng'
 
@@ -20,6 +21,7 @@ export function HostScreen() {
   const [view, setView] = useState<HostGameView | null>(null)
   const [board, setBoard] = useState<BoardState | null>(null)
   const [active, setActive] = useState<ActiveClue | null>(null)
+  const [wagerLimit, setWagerLimit] = useState<WagerLimit | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<Tab>('brett')
 
@@ -33,11 +35,14 @@ export function HostScreen() {
       const [nextView, nextBoard, nextActive] = await Promise.all([
         hostFetch<HostGameView>(`/games/${code}`),
         hostFetch<BoardState>(`/games/${code}/board`),
-        hostFetch<{ active: ActiveClue | null }>(`/games/${code}/active`),
+        hostFetch<{ active: ActiveClue | null; wagerLimit: WagerLimit | null }>(
+          `/games/${code}/active`,
+        ),
       ])
       setView(nextView)
       setBoard(nextBoard)
       setActive(nextActive.active)
+      setWagerLimit(nextActive.wagerLimit)
       setError(null)
 
       const nowActive = Boolean(nextActive.active)
@@ -80,6 +85,7 @@ export function HostScreen() {
         {tab === 'spor' && board ? (
           <SporTab
             active={active}
+            wagerLimit={wagerLimit}
             board={board}
             code={code}
             onChanged={refresh}
