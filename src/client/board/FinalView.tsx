@@ -1,6 +1,7 @@
 import type { BoardTeam } from '@shared/board-state.ts'
 import { Countdown } from './Countdown.tsx'
 import { Confetti } from './Confetti.tsx'
+import { FitText } from './FitText.tsx'
 
 export interface FinalBet {
   teamId: string
@@ -68,7 +69,12 @@ export function FinalView({
   if (state.phase === 'final_clue') {
     return (
       <div className="final">
-        <p className="final__prompt">{state.prompt}</p>
+        <FitText
+          className="final__prompt"
+          text={state.prompt ?? ''}
+          max={80}
+          min={34}
+        />
         {endsAt ? <Countdown endsAt={endsAt} totalMs={60_000} /> : null}
         <div className="final__locks">
           {state.bets.map((bet) => (

@@ -564,6 +564,9 @@ body {
 
 .clue__prompt {
   flex: 1;
+  /* Definite height, so FitText has something real to measure against and so a
+     long prompt shrinks rather than being clipped by the clue's overflow. */
+  min-height: 0;
   display: grid;
   place-items: center;
   margin: 0;
@@ -1017,7 +1020,13 @@ body {
   color: var(--ink-dim);
 }
 
+/* Definite height for the same reason as .clue__prompt: the Final's one clue
+   is the longest single piece of text on the board all evening. */
 .final__prompt {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  place-items: center;
   margin: 0;
   font-size: 80px;
   line-height: 1.2;

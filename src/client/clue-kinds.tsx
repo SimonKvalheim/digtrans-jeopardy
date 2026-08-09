@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react'
 import type { BoardState } from '@shared/board-state.ts'
 import type { ClueKind } from '@shared/clue-kinds.ts'
 import type { HostActiveClue } from './host/api.ts'
+import { FitText } from './board/FitText.tsx'
 
 /**
  * The clue-kind registry (PRD §6.4) — a registry, deliberately, not a switch.
@@ -29,12 +30,21 @@ export function clueImageUrl(gameClueId: string): string {
 }
 
 function TextBoard({ clue }: { clue: BoardClue }) {
-  return <p className="clue__prompt">{clue.prompt}</p>
+  return <FitText className="clue__prompt" text={clue.prompt} max={92} min={38} />
 }
 
 function EmojiBoard({ clue }: { clue: BoardClue }) {
-  // The whole joke is that they are enormous.
-  return <p className="clue__prompt clue__prompt--emoji">{clue.prompt}</p>
+  // The whole joke is that they are enormous — hence a floor that is still
+  // larger than an ordinary prompt's ceiling.
+  return (
+    <FitText
+      className="clue__prompt clue__prompt--emoji"
+      text={clue.prompt}
+      max={240}
+      min={96}
+      step={12}
+    />
+  )
 }
 
 /**
@@ -56,7 +66,7 @@ function ImageBoard({ clue }: { clue: BoardClue }) {
   if (!clue.hasImage || failed) {
     return (
       <div className="clue__image clue__image--missing">
-        <p className="clue__prompt">{clue.prompt}</p>
+        <FitText className="clue__prompt" text={clue.prompt} max={92} min={38} />
         <p className="clue__image-note">Bildet mangler — les spørsmålet høyt.</p>
       </div>
     )
@@ -91,7 +101,7 @@ function AudioHostBoard({ clue }: { clue: BoardClue }) {
       <span className="clue__audio-note" aria-hidden="true">
         ♪
       </span>
-      <p className="clue__prompt">{clue.prompt}</p>
+      <FitText className="clue__prompt" text={clue.prompt} max={80} min={36} />
     </div>
   )
 }
