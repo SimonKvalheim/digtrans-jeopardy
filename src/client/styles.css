@@ -209,3 +209,201 @@ h2 {
 .muted {
   color: var(--ink-dim);
 }
+
+/* ── Host console ────────────────────────────────────────────────────────────
+   Thumb-first: the tab bar is pinned to the bottom of the viewport, and every
+   control is at least 48px so it can be hit one-handed without looking. */
+.host {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+.host__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.host__code {
+  font-family: var(--font-display);
+  font-size: 24px;
+  letter-spacing: 0.12em;
+  color: var(--gold-bright);
+}
+
+.host__error {
+  color: var(--negative);
+  font-size: 14px;
+}
+
+.host__body {
+  flex: 1;
+  padding: 16px;
+  padding-bottom: 24px;
+  overflow-y: auto;
+}
+
+.host__tabs {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  background: rgba(0, 0, 0, 0.4);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.host__tab {
+  min-height: 60px;
+  border: 0;
+  background: var(--tile-bg-spent);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 20px;
+  text-transform: uppercase;
+}
+
+.host__tab--active {
+  background: var(--tile-bg);
+  color: var(--gold-bright);
+}
+
+/* ── Shared phone controls ───────────────────────────────────────────────── */
+.field {
+  display: block;
+  margin-bottom: 16px;
+}
+
+.field span {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: var(--ink-dim);
+}
+
+input[type='text'],
+input[type='password'] {
+  width: 100%;
+  min-height: 52px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--ink);
+  font-size: 18px;
+}
+
+.btn {
+  min-height: 52px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--tile-bg-spent);
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+}
+
+.btn--primary {
+  width: 100%;
+  background: var(--gold);
+  color: #1a1200;
+}
+
+.btn--plus {
+  background: #0d6b3f;
+}
+
+.btn--minus {
+  background: #7a1f2b;
+}
+
+.btn--undo {
+  width: 100%;
+  margin-top: 20px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.chip {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-dim);
+  font-size: 16px;
+}
+
+.chip--active {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #1a1200;
+}
+
+/* ── Poeng tab ───────────────────────────────────────────────────────────── */
+.poeng__steps {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.poeng__teams {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.poeng__team {
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.poeng__team-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.poeng__team-name {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.poeng__team-score {
+  font-family: var(--font-display);
+  font-size: 30px;
+}
+
+.poeng__team-score--negative {
+  color: var(--negative);
+}
+
+.poeng__team-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.poeng__add {
+  display: flex;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.host-gate {
+  max-width: 420px;
+  margin: 0 auto;
+  padding-top: 48px;
+}
