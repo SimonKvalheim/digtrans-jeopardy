@@ -27,18 +27,27 @@ Node 22 · Express · `ws` · Vite · React · TypeScript · Drizzle ORM · Post
 ## Getting started
 
 ```bash
-npm install
+pnpm install
 cp .env.example .env    # fill in DATABASE_URL, HOST_PIN, ADMIN_PIN, API keys
-npm run db:migrate
-npm run dev
+pnpm dev
 ```
 
-Clue content is **not** in this repo — it is imported at runtime through `/admin`. See
-[`docs/PRD.md`](docs/PRD.md) for the pack format.
+Migrations run automatically at startup, so there is no separate migrate step. `pnpm db:generate`
+creates a new migration after a schema change; `pnpm test` runs the scoring unit test.
+
+Deploys are manual and CLI-driven rather than push-to-deploy, because a redeploy drops every
+WebSocket and that must never happen by accident during a game:
+
+```bash
+pnpm build && railway up --service web
+```
+
+Clue content is **not** in this repo — it is imported at runtime through `/admin`.
 
 ## Documentation
 
 - [`docs/PRD.md`](docs/PRD.md) — the full spec: rules, data model, architecture, decision log
+- [`docs/pack-format.md`](docs/pack-format.md) — the clue pack JSON format and its validation rules
 - `docs/prd.html` — the same document rendered with mockups and diagrams
 
 ## Licence
