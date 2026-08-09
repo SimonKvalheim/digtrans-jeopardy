@@ -1,0 +1,138 @@
+import { useState, type ReactNode } from 'react'
+import type { BoardState } from '@shared/board-state.ts'
+import type { ClueKind } from '@shared/clue-kinds.ts'
+import type { HostActiveClue } from './host/api.ts'
+
+/**
+ * The clue-kind registry (PRD §6.4) — a registry, deliberately, not a switch.
+ *
+ * A new kind is: a payload variant in shared/clue-kinds.ts, a `Board` renderer
+ * here, and an optional `Host` control. Nothing in the game loop changes, which
+ * is the whole claim the architecture makes about itself.
+ */
+
+export type BoardClue = NonNullable<BoardState['activeClue']>
+
+export interface ClueKindDef {
+  /** What the TV shows. Never the answer. */
+  Board: (props: { clue: BoardClue }) => ReactNode
+  /** An extra control on the host console, if the kind needs one. */
+  Host?: (props: { clue: HostActiveClue }) => ReactNode
+}
+
+/**
+ * Addressed by game_clues.id — the per-night row the board already holds — so
+ * that content ids stay server-side. See routes/media.ts.
+ */
+export function clueImageUrl(gameClueId: string): string {
+  return `/api/media/${gameClueId}/image`
+}
+
+function TextBoard({ clue }: { clue: BoardClue }) {
+  return <p className="clue__prompt">{clue.prompt}</p>
+}
+
+function EmojiBoard({ clue }: { clue: BoardClue }) {
+  // The whole joke is that they are enormous.
+  return <p className="clue__prompt clue__prompt--emoji">{clue.prompt}</p>
+}
+
+/**
+ * Full-bleed (PRD §6.4), but the photo itself is never cropped.
+ *
+ * These clues are *already* crops — a tight detail of Nidarosdomen, an eye —
+ * so letting `cover` trim the edges to fill a 16:9 stage would throw away the
+ * part that makes the question answerable. The photo is therefore contained,
+ * and a blurred, scaled copy of itself fills whatever is left. It reads as
+ * edge-to-edge from the sofa and loses nothing.
+ */
+function ImageBoard({ clue }: { clue: BoardClue }) {
+  const [failed, setFailed] = useState(false)
+  const src = clueImageUrl(clue.id)
+
+  // Missing bytes is a normal authoring state, and the host still has to be
+  // able to run the clue: fall back to the prompt, and say why it is bare so
+  // nobody stands there waiting for a picture that is never coming.
+  if (!clue.hasImage || failed) {
+    return (
+      <div className="clue__image clue__image--missing">
+        <p className="clue__prompt">{clue.prompt}</p>
+        <p className="clue__image-note">Bildet mangler — les spørsmålet høyt.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="clue__image">
+      <div
+        className="clue__image-backdrop"
+        style={{ backgroundImage: `url("${src}")` }}
+        aria-hidden="true"
+      />
+      <img
+        className="clue__image-photo"
+        src={src}
+        alt=""
+        onError={() => setFailed(true)}
+      />
+      <p className="clue__image-caption">{clue.prompt}</p>
+    </div>
+  )
+}
+
+/** The TV shows the note and the prompt; the music comes off the host phone. */
+function AudioHostBoard({ clue }: { clue: BoardClue }) {
+  return (
+    <div className="clue__audio">
+      <span className="clue__audio-note" aria-hidden="true">
+        ♪
+      </span>
+      <p className="clue__prompt">{clue.prompt}</p>
+    </div>
+  )
+}
+
+/** The host phone is the music player, so the link belongs under his thumb. */
+function SpotifyTapCard({ clue }: { clue: HostActiveClue }) {
+  if (!clue.payload.link) return null
+  return (
+    <a
+      className="btn btn--primary spor__spotify"
+      href={clue.payload.link}
+      target="_blank"
+      rel="noreferrer"
+    >
+      ▶ Spill av{clue.payload.hint ? ` — ${clue.payload.hint}` : ''}
+    </a>
+  )
+}
+
+/** The host needs to see the picture too, or he cannot judge a near-miss. */
+function ImageThumb({ clue }: { clue: HostActiveClue }) {
+  const [failed, setFailed] = useState(false)
+  if (failed) return <p className="muted">Bildet mangler i basen.</p>
+  return (
+    <img
+      className="spor__thumb"
+      src={clueImageUrl(clue.gameClueId)}
+      alt=""
+      onError={() => setFailed(true)}
+    />
+  )
+}
+
+export const clueKinds: Record<ClueKind, ClueKindDef> = {
+  text: { Board: TextBoard },
+  emoji: { Board: EmojiBoard },
+  image: { Board: ImageBoard, Host: ImageThumb },
+  audio_host: { Board: AudioHostBoard, Host: SpotifyTapCard },
+  // Declared to prove the seam is real. Not Tuesday work — both fall back to
+  // the prompt, which is exactly what "unimplemented" should look like on a TV.
+  audio_file: { Board: TextBoard },
+  video: { Board: TextBoard },
+}
+
+/** An unknown kind must still render something rather than blank the board. */
+export function clueKindFor(kind: string): ClueKindDef {
+  return clueKinds[kind as ClueKind] ?? { Board: TextBoard }
+}

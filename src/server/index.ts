@@ -9,6 +9,7 @@ import { adminRouter } from './routes/admin.ts'
 import { hostRouter } from './routes/host.ts'
 import { boardRouter } from './routes/board.ts'
 import { teamRouter } from './routes/team.ts'
+import { mediaRouter } from './routes/media.ts'
 import { register, send, notifyChanged } from './ws/hub.ts'
 import { recordBuzz, tryBuzz } from './game/buzz.ts'
 
@@ -17,7 +18,10 @@ import { recordBuzz, tryBuzz } from './game/buzz.ts'
 await runMigrations()
 
 const app = express()
-app.use(express.json({ limit: '25mb' })) // pack imports carry base64 images
+// Pack imports carry base64 images, which inflate by a third. Thirteen photos
+// straight off a phone would clear 25 MB on their own, and the failure mode is
+// a 413 at the worst possible moment — the morning of the event.
+app.use(express.json({ limit: '64mb' }))
 
 // Railway's health check hits this. It must not touch Postgres — a database
 // hiccup should not take the whole service out of rotation mid-party.
@@ -50,6 +54,7 @@ app.use('/api/admin', adminRouter)
 app.use('/api/host', hostRouter)
 app.use('/api/board', boardRouter)
 app.use('/api/team', teamRouter)
+app.use('/api/media', mediaRouter)
 
 const httpServer = createServer(app)
 

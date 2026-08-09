@@ -61,3 +61,26 @@ export interface HostGameView {
   teams: HostTeam[]
   recentEvents: HostScoreEvent[]
 }
+
+/**
+ * The open clue as only the host may see it — the answer key is in here, which
+ * is the entire reason /host is PIN-gated.
+ *
+ * It lives in this module rather than in the tab that renders it so that the
+ * clue-kind registry can type its host controls without importing a component.
+ */
+export interface HostActiveClue {
+  gameClueId: string
+  phase: string
+  phaseEndsAt: string | null
+  ownerTeamId: string | null
+  isDailyDouble: boolean
+  wager: number | null
+  tier: number
+  value: number
+  answer: string
+  kind: string
+  payload: { kind: string; prompt: string; link?: string; hint?: string }
+  fromLabel: string | null
+  categoryName: string
+}

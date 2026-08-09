@@ -1,10 +1,12 @@
 import type { BoardState } from '@shared/board-state.ts'
 import { Countdown } from './Countdown.tsx'
+import { clueKindFor } from '../clue-kinds.tsx'
 
 /**
  * The open tile, full-bleed on the TV. Carries the prompt and never the answer.
  *
- * Emoji clues get their own scale — the whole joke is that they are enormous.
+ * What sits in the middle comes from the clue-kind registry, so adding a kind
+ * is a renderer and not an edit here (PRD §6.4).
  */
 export function ClueView({
   clue,
@@ -33,8 +35,10 @@ export function ClueView({
     owner.score > 0 &&
     clue.wager === owner.score
 
+  const KindBoard = clueKindFor(clue.kind).Board
+
   return (
-    <div className="clue">
+    <div className={`clue clue--${clue.kind}`}>
       <div className="clue__header">
         <span>
           {clue.categoryName}
@@ -54,13 +58,7 @@ export function ClueView({
         <p className="clue__all-in">Ekte dagens doble — hele potten!</p>
       ) : null}
 
-      <p
-        className={`clue__prompt${
-          clue.kind === 'emoji' ? ' clue__prompt--emoji' : ''
-        }`}
-      >
-        {clue.prompt}
-      </p>
+      <KindBoard clue={clue} />
 
       {/* The margin is shown on purpose: it is what stops the argument. */}
       {clue.stealWinner ? (

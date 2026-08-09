@@ -1,4 +1,6 @@
+import { useEffect } from 'react'
 import type { BoardState } from '@shared/board-state.ts'
+import { clueImageUrl } from '../clue-kinds.tsx'
 
 /**
  * The 6×5 grid. Sized by CSS grid rather than fixed pixels so that cutting
@@ -8,6 +10,22 @@ import type { BoardState } from '@shared/board-state.ts'
 export function BoardGrid({ round }: { round: NonNullable<BoardState['round']> }) {
   const columns = round.categories.length
   const rows = rowsOf(round.categories)
+
+  const imageTiles = round.categories
+    .flatMap((category) => category.tiles)
+    .filter((tile) => tile.hasImage && !tile.spent)
+    .map((tile) => tile.id)
+
+  // Warm every picture in the round while the grid is on screen. A tile opening
+  // is the one moment in the evening with an audience and no patience, and a
+  // photo that starts downloading then is a blank blue rectangle in front of
+  // thirty people. The grid is on screen for minutes before that happens.
+  useEffect(() => {
+    imageTiles.forEach(warmImage)
+    // Deliberately no cleanup: this grid unmounts the moment a tile opens, and
+    // aborting the very downloads that were meant to be ready by then would
+    // defeat the point entirely.
+  }, [imageTiles.join()])
 
   return (
     <div
@@ -58,6 +76,21 @@ export function BoardGrid({ round }: { round: NonNullable<BoardState['round']> }
       )}
     </div>
   )
+}
+
+/**
+ * Held outside the component, and never released: an Image whose only reference
+ * is a local can have its in-flight request dropped, and the whole purpose here
+ * is that the request finishes after the component is gone. At most a handful
+ * of photos per round, so nothing to reclaim.
+ */
+const warmedImages = new Map<string, HTMLImageElement>()
+
+function warmImage(gameClueId: string) {
+  if (warmedImages.has(gameClueId)) return
+  const img = new Image()
+  img.src = clueImageUrl(gameClueId)
+  warmedImages.set(gameClueId, img)
 }
 
 /**

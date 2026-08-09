@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import type { BoardState } from '@shared/board-state.ts'
-import { hostFetch } from './api.ts'
+import { hostFetch, type HostActiveClue } from './api.ts'
 import { WagerPanel, type WagerLimit } from './WagerPanel.tsx'
+import { clueKindFor } from '../clue-kinds.tsx'
 
 /** Seconds left, ticking locally against a server deadline. */
 function HostClock({ endsAt }: { endsAt: string }) {
@@ -16,21 +17,7 @@ function HostClock({ endsAt }: { endsAt: string }) {
   return <>{left} s</>
 }
 
-export interface ActiveClue {
-  gameClueId: string
-  phase: string
-  phaseEndsAt: string | null
-  ownerTeamId: string | null
-  isDailyDouble: boolean
-  wager: number | null
-  tier: number
-  value: number
-  answer: string
-  kind: string
-  payload: { kind: string; prompt: string; link?: string; hint?: string }
-  fromLabel: string | null
-  categoryName: string
-}
+export type ActiveClue = HostActiveClue
 
 /**
  * Question, answer key, and the two buttons pressed two hundred times tonight.
@@ -106,6 +93,11 @@ export function SporTab({
       }),
     )
 
+  // Whatever extra control this kind needs — the Spotify card, the picture the
+  // host has to judge a near-miss against. From the registry, so a new kind
+  // never edits this tab (PRD §6.4).
+  const KindControl = clueKindFor(active.kind).Host
+
   const close = () =>
     act(async () => {
       await hostFetch(`/games/${code}/close`, { method: 'POST' })
@@ -126,17 +118,7 @@ export function SporTab({
 
       <p className="spor__prompt">{active.payload.prompt}</p>
 
-      {/* The host phone is also the music player for audio_host clues. */}
-      {active.payload.kind === 'audio_host' && active.payload.link ? (
-        <a
-          className="btn btn--primary spor__spotify"
-          href={active.payload.link}
-          target="_blank"
-          rel="noreferrer"
-        >
-          ▶ Spill av{active.payload.hint ? ` — ${active.payload.hint}` : ''}
-        </a>
-      ) : null}
+      {KindControl ? <KindControl clue={active} /> : null}
 
       {showAnswer ? (
         <p className="spor__answer">{active.answer}</p>

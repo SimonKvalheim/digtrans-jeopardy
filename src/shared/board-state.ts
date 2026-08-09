@@ -17,6 +17,14 @@ export interface BoardTile {
   sips: number
   /** Spent tiles are greyed out and cannot be picked again. */
   spent: boolean
+  /**
+   * Whether /api/media/:id/image will answer. The board uses it to warm every
+   * image in the round while the grid is on screen, so a full-bleed photo is
+   * already local when its tile opens rather than downloading in front of the
+   * room. It reveals only that a tile is a picture question, which the category
+   * heading ("Zoomet inn") announces anyway.
+   */
+  hasImage: boolean
 }
 
 export interface BoardCategory {
@@ -72,6 +80,8 @@ export interface BoardState {
     ownerTeamId: string | null
     kind: string
     prompt: string
+    /** Whether this clue has bytes at /api/media/:id/image. */
+    hasImage: boolean
     /** Sips to attempt this tier, from the pack's drinkScale. */
     sips: number
     /**

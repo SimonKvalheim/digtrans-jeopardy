@@ -1,4 +1,4 @@
-import { and, asc, eq } from 'drizzle-orm'
+import { and, asc, eq, sql } from 'drizzle-orm'
 import type {
   BoardCategory,
   BoardState,
@@ -12,6 +12,13 @@ import { buzzOrder } from './buzz.ts'
 
 /** A tile is spent once its clue has been resolved one way or another. */
 const SPENT_PHASES = new Set(['revealed', 'done'])
+
+/**
+ * Presence, never the bytes. The board polls this whole payload every two
+ * seconds; selecting `imageBytes` here would drag every photo in the round
+ * through Postgres and over the wire on every tick.
+ */
+const HAS_IMAGE = sql<boolean>`${schema.clueMedia.imageBytes} is not null`
 
 /**
  * Assembles everything the TV draws. Deliberately excludes clue prompts and
@@ -68,6 +75,7 @@ export async function buildBoardState(code: string): Promise<BoardState | null> 
           tier: schema.clues.tier,
           gameClueId: schema.gameClues.id,
           phase: schema.gameClues.phase,
+          hasImage: HAS_IMAGE,
         })
         .from(schema.categories)
         .innerJoin(
@@ -83,6 +91,9 @@ export async function buildBoardState(code: string): Promise<BoardState | null> 
             eq(schema.gameClues.gameId, game.id),
           ),
         )
+        // Left: most clues have no media row at all, and an inner join here
+        // would silently drop every text tile from the board.
+        .leftJoin(schema.clueMedia, eq(schema.clueMedia.clueId, schema.clues.id))
         .where(eq(schema.categories.roundId, activeRound.id))
         .orderBy(asc(schema.categories.position), asc(schema.clues.tier))
 
@@ -105,6 +116,7 @@ export async function buildBoardState(code: string): Promise<BoardState | null> 
           value: valueForTier(row.tier as Tier, activeRound.valueStep),
           sips: sipsForTier(row.tier as Tier, drinkScale),
           spent: SPENT_PHASES.has(row.phase),
+          hasImage: Boolean(row.hasImage),
         })
       }
 
@@ -154,6 +166,7 @@ async function buildActiveClue(
       fromLabel: schema.clues.fromLabel,
       categoryName: schema.categories.name,
       valueStep: schema.rounds.valueStep,
+      hasImage: HAS_IMAGE,
     })
     .from(schema.gameClues)
     .innerJoin(schema.clues, eq(schema.clues.id, schema.gameClues.clueId))
@@ -162,6 +175,7 @@ async function buildActiveClue(
       eq(schema.categories.id, schema.clues.categoryId),
     )
     .innerJoin(schema.rounds, eq(schema.rounds.id, schema.categories.roundId))
+    .leftJoin(schema.clueMedia, eq(schema.clueMedia.clueId, schema.clues.id))
     .where(eq(schema.gameClues.id, activeClueId))
 
   if (!row) return null
@@ -179,6 +193,7 @@ async function buildActiveClue(
     ownerTeamId: row.ownerTeamId,
     kind: row.kind,
     prompt: row.payload.prompt,
+    hasImage: Boolean(row.hasImage),
     sips: sipsForTier(row.tier as Tier, drinkScale),
     stealWinner: await buildStealWinner(row.id, row.stealTeamId),
   }
