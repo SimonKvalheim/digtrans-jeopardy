@@ -50,7 +50,8 @@ front of thirty people.
 - **Price is difficulty.** Tier 1 is a gimme; tier 5 should hurt.
 - **Categories:** 1–8 per round. The round-2 fallback in the PRD ("cut to 4 categories") is a data
   change with no code change, and this is why.
-- **Final** is one round with exactly one category, one clue, and `dailyDoubles: 0`.
+- **Final** is one round with exactly one category, one clue, and `dailyDoubles: 0`. It is scored
+  purely on the wager, so `valueStep` may be omitted there — but every playable round must set it.
 
 ## Clue kinds
 

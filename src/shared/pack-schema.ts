@@ -57,8 +57,12 @@ export const categorySchema = z.strictObject({
 
 export const roundSchema = z.strictObject({
   kind: z.enum(['jeopardy', 'double', 'final']),
-  /** tier × valueStep is the clue's value. Final ignores it. */
-  valueStep: z.number().int().positive(),
+  /**
+   * tier × valueStep is the clue's value. The Final ignores it entirely — it
+   * is scored purely on the wager — so it may be omitted there. Playable
+   * rounds are required to set it, checked in validateForPublish.
+   */
+  valueStep: z.number().int().nonnegative().default(0),
   dailyDoubles: z.number().int().min(0).max(3),
   categories: z.array(categorySchema).min(1).max(8),
 })
@@ -118,6 +122,13 @@ export function validateForPublish(pack: PackInput): PackProblem[] {
         problems.push({ path: at, message: 'final kan ikke ha daily doubles' })
       }
     } else {
+      if (round.valueStep <= 0) {
+        problems.push({
+          path: at,
+          message: 'spillbar runde må ha valueStep (100 i runde 1, 200 i runde 2)',
+        })
+      }
+
       // Daily Double positions are drawn per game, so there must be at least
       // as many tiles as doubles to hide in them.
       const tileCount = round.categories.reduce(
