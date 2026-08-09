@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, type CSSProperties } from 'react'
 import type { BoardState } from '@shared/board-state.ts'
 import { clueImageUrl } from '../clue-kinds.tsx'
 
@@ -36,8 +36,12 @@ export function BoardGrid({ round }: { round: NonNullable<BoardState['round']> }
         gridTemplateRows: `132px repeat(${rows.length}, 1fr)`,
       }}
     >
-      {round.categories.map((category) => (
-        <div key={category.id} className="board__category">
+      {round.categories.map((category, columnIndex) => (
+        <div
+          key={category.id}
+          className="board__category"
+          style={{ '--jp-in': `${columnIndex * 45}ms` } as CSSProperties}
+        >
           <span>{category.name}</span>
           {category.pairedWith ? (
             <em className="board__category-pair">/ {category.pairedWith}</em>
@@ -53,6 +57,13 @@ export function BoardGrid({ round }: { round: NonNullable<BoardState['round']> }
             <div
               key={tile.id}
               className={`board__tile${tile.spent ? ' board__tile--spent' : ''}`}
+              // Diagonal stagger, so a new round lands as one sweep across the
+              // board rather than six columns arriving at once.
+              style={
+                {
+                  '--jp-in': `${(rowIndex + columnIndex) * 45 + 120}ms`,
+                } as CSSProperties
+              }
             >
               {tile.spent ? null : (
                 <>

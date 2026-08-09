@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { BoardState } from '@shared/board-state.ts'
 import { Stage } from '../Stage.tsx'
 import { BoardGrid } from '../board/BoardGrid.tsx'
@@ -6,6 +6,10 @@ import { ScoreStrip } from '../board/ScoreStrip.tsx'
 import { ClueView } from '../board/ClueView.tsx'
 import { useGameSocket } from '../team/useGameSocket.ts'
 import { FinalView, type FinalStateView } from '../board/FinalView.tsx'
+import { RoundSlam } from '../board/RoundSlam.tsx'
+
+/** Long enough to read the rule off the TV, short enough not to stall play. */
+const SLAM_MS = 4200
 
 /**
  * The TV. Zero interaction: it is opened once, fullscreened, and left alone.
@@ -67,6 +71,26 @@ export function BoardScreen() {
     }
   }, [code, reloadKey])
 
+  // The round-2 slam-in. Fires on a *change* of round, never on the first
+  // round seen — otherwise reopening the laptop mid-game replays the fanfare
+  // for a round the room has been playing for twenty minutes.
+  const [slamming, setSlamming] = useState(false)
+  const seenRound = useRef<string | null>(null)
+  const roundId = state?.round?.id ?? null
+
+  useEffect(() => {
+    if (!roundId) return
+    if (seenRound.current === null) {
+      seenRound.current = roundId
+      return
+    }
+    if (seenRound.current === roundId) return
+    seenRound.current = roundId
+    setSlamming(true)
+    const timer = setTimeout(() => setSlamming(false), SLAM_MS)
+    return () => clearTimeout(timer)
+  }, [roundId])
+
   // Polling above is the safety net; this is what makes a buzz land on the TV
   // immediately rather than up to two seconds later.
   useGameSocket({
@@ -107,10 +131,20 @@ export function BoardScreen() {
             teams={state.teams}
             endsAt={state.activeClue?.phaseEndsAt ?? null}
           />
+        ) : slamming && state.round ? (
+          <RoundSlam
+            round={state.round}
+            turnTeamName={
+              state.teams.find((t) => t.id === state.turnTeamId)?.name ?? null
+            }
+          />
         ) : state.activeClue ? (
           <ClueView clue={state.activeClue} teams={state.teams} />
         ) : state.round ? (
-          <BoardGrid round={state.round} />
+          // Keyed on the round so the grid genuinely remounts and its tiles
+          // cascade in again, rather than the new round's values quietly
+          // appearing in the old round's boxes.
+          <BoardGrid key={state.round.id} round={state.round} />
         ) : (
           <div className="board__notice">
             <h1>Venter på runde</h1>

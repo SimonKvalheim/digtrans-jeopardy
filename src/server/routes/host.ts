@@ -16,6 +16,7 @@ import {
   wagerLimit,
 } from '../game/loop.ts'
 import { buildBoardState } from '../game/state.ts'
+import { roundProgress, setRound } from '../game/rounds.ts'
 import {
   finalState,
   finishFinal,
@@ -249,6 +250,27 @@ hostRouter.post('/games/:code/resolve', async (req, res) => {
 
 hostRouter.post('/games/:code/close', (req, res) =>
   wrap(() => closeClue(req.params.code))(req, res),
+)
+
+/** Every round in the pack with tonight's progress, for the round switcher. */
+hostRouter.get('/games/:code/rounds', async (req, res) => {
+  try {
+    res.json({ rounds: await roundProgress(req.params.code) })
+  } catch (error) {
+    res.status(404).json({
+      error: error instanceof Error ? error.message : 'Ukjent feil',
+    })
+  }
+})
+
+/** No body advances to the next round; a roundId jumps to that one. */
+hostRouter.post('/games/:code/round', (req, res) =>
+  wrap(() =>
+    setRound(
+      req.params.code,
+      typeof req.body?.roundId === 'string' ? req.body.roundId : undefined,
+    ),
+  )(req, res),
 )
 
 hostRouter.post('/games/:code/turn', (req, res) =>

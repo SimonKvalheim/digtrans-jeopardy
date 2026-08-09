@@ -88,6 +88,27 @@ body {
   50% { box-shadow: 0 18px 0 #6d0a13, 0 0 0 26px rgba(255, 90, 90, 0); }
 }
 
+/* The slam itself: overshoot, settle, then a slow drift so the frame is never
+   completely static while the room reads it. */
+@keyframes jp-slam {
+  0% { transform: scale(2.6); opacity: 0; filter: blur(18px); }
+  55% { transform: scale(.94); opacity: 1; filter: blur(0); }
+  72% { transform: scale(1.03); }
+  100% { transform: scale(1); }
+}
+
+@keyframes jp-slamline {
+  from { transform: translateY(30px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+/* Tiles cascade in when a round arrives, on a diagonal so it reads as one
+   sweep across the board rather than six columns landing at once. */
+@keyframes jp-tilein {
+  from { transform: translateY(-26px) scale(.86); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; }
 }
@@ -176,6 +197,7 @@ body {
   text-align: center;
   text-transform: uppercase;
   text-shadow: 0 3px 0 rgba(0, 0, 0, .6);
+  animation: jp-tilein .42s ease-out var(--jp-in, 0ms) both;
 }
 
 .board__category-pair {
@@ -206,6 +228,7 @@ body {
   font-size: 76px;
   color: var(--gold-bright);
   text-shadow: 0 5px 0 rgba(0, 0, 0, .65);
+  animation: jp-tilein .42s ease-out var(--jp-in, 0ms) both;
 }
 
 .board__tile-value {
@@ -252,6 +275,57 @@ body {
 
 .board__tile--empty::after {
   display: none;
+}
+
+/* ── Round slam-in ───────────────────────────────────────────────────────── */
+.round-slam {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 26px;
+  padding: 40px 80px;
+  background: radial-gradient(80% 80% at 50% 40%, #2836ff 0%, #0a11b4 45%, #04074f 100%);
+  box-shadow: inset 0 0 240px rgba(0, 0, 0, .7);
+  text-align: center;
+}
+
+.round-slam__title {
+  margin: 0;
+  font-size: 190px;
+  line-height: .94;
+  background: linear-gradient(180deg, #fff5cf, #ffcc00 52%, #c8862f);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 10px 0 rgba(0, 0, 0, .55));
+  animation: jp-slam .85s cubic-bezier(.2, .9, .25, 1) both;
+}
+
+.round-slam__values {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 44px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--gold);
+  animation: jp-slamline .5s ease-out .55s both;
+}
+
+.round-slam__turn {
+  margin: 0;
+  padding: 16px 44px;
+  background: linear-gradient(180deg, #ffe89a, #ffcc00 60%, #e0a92f);
+  color: #1a1200;
+  font-family: var(--font-display);
+  font-size: 52px;
+  text-transform: uppercase;
+  box-shadow: 0 8px 0 #8a6410, 0 0 60px rgba(255, 204, 0, .4);
+  animation: jp-slamline .5s ease-out .8s both;
 }
 
 /* ── Open clue on the TV ─────────────────────────────────────────────────── */
@@ -1318,6 +1392,23 @@ input[type='password']:focus {
 }
 
 .brett__tile--empty { background: transparent; box-shadow: none; }
+
+/* Round switcher, under the tile picker. Deliberately below the fold of the
+   grid: it is pressed twice all evening, and the tiles are pressed sixty times. */
+.brett__rounds {
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 204, 0, .25);
+}
+
+.brett__rounds-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.brett__rounds .btn--primary { margin-top: 4px; }
 
 /* ── Spør tab ────────────────────────────────────────────────────────────── */
 .spor__meta {

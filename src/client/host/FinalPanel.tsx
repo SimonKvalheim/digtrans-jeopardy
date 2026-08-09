@@ -61,8 +61,11 @@ export function FinalPanel({
   if (!inFinal) {
     return (
       <div className="final-panel">
+        {/* Stated before the tap, not after: which teams are out is the one
+            thing about the Final that surprises a room, and the host should be
+            able to say it out loud before the board announces it. */}
         <p className="muted">
-          Alle lag på null eller under står over finalen.
+          Finalen er ikke startet. Lag på null eller under står over.
         </p>
         <button
           type="button"
