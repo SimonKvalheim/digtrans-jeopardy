@@ -592,6 +592,11 @@ for (const entry of await readdir(outDir)) {
 // The app's real stylesheet, copied verbatim. Never edit design/styles.css.
 await cp(`${root}src/client/styles.css`, `${outDir}/styles.css`)
 
+// …along with the fonts it references, so a card renders in Anton rather than
+// in whatever the viewer's machine happens to substitute.
+await mkdir(`${outDir}/fonts`, { recursive: true })
+await cp(`${root}src/client/fonts`, `${outDir}/fonts`, { recursive: true })
+
 for (const card of CARDS) {
   await writeFile(`${outDir}/${card.file}.html`, page(card))
 }
