@@ -1,0 +1,202 @@
+[
+  {
+    "name": "Farger",
+    "path": "tokens-colors.html",
+    "group": "Foundations",
+    "subtitle": "Jeopardy-blå, gull, negativ rød",
+    "viewport": {
+      "width": 960,
+      "height": 340
+    }
+  },
+  {
+    "name": "Typografi",
+    "path": "tokens-type.html",
+    "group": "Foundations",
+    "subtitle": "Display mot UI, brett mot telefon",
+    "viewport": {
+      "width": 960,
+      "height": 460
+    }
+  },
+  {
+    "name": "Rutenett",
+    "path": "board-grid.html",
+    "group": "Brett",
+    "subtitle": "6×5, brukte ruter nedtonet",
+    "viewport": {
+      "width": 960,
+      "height": 540
+    }
+  },
+  {
+    "name": "Spørsmål",
+    "path": "board-clue-text.html",
+    "group": "Brett",
+    "subtitle": "Tekst, med nedtelling",
+    "viewport": {
+      "width": 960,
+      "height": 540
+    }
+  },
+  {
+    "name": "Emoji-spørsmål",
+    "path": "board-clue-emoji.html",
+    "group": "Brett",
+    "subtitle": "Egen skala — poenget er at de er enorme",
+    "viewport": {
+      "width": 960,
+      "height": 540
+    }
+  },
+  {
+    "name": "Stjeling åpen",
+    "path": "board-steal-open.html",
+    "group": "Brett",
+    "subtitle": "10 sekunder, rød nedtelling",
+    "viewport": {
+      "width": 960,
+      "height": 540
+    }
+  },
+  {
+    "name": "Vinner av buzzen",
+    "path": "board-buzz-winner.html",
+    "group": "Brett",
+    "subtitle": "Marginen i ms, så ingen krangler",
+    "viewport": {
+      "width": 960,
+      "height": 540
+    }
+  },
+  {
+    "name": "Dagens doble",
+    "path": "board-daily-double.html",
+    "group": "Brett",
+    "subtitle": "Slam før spørsmålet finnes",
+    "viewport": {
+      "width": 960,
+      "height": 540
+    }
+  },
+  {
+    "name": "Ekte dagens doble",
+    "path": "board-daily-double-allin.html",
+    "group": "Brett",
+    "subtitle": "Hele potten satset — hele rommet drikker",
+    "viewport": {
+      "width": 960,
+      "height": 540
+    }
+  },
+  {
+    "name": "Final — innsats",
+    "path": "board-final-wager.html",
+    "group": "Brett",
+    "subtitle": "Blindt, og hvem som er ute",
+    "viewport": {
+      "width": 960,
+      "height": 540
+    }
+  },
+  {
+    "name": "Final — stillingen",
+    "path": "board-final-standings.html",
+    "group": "Brett",
+    "subtitle": "Grønt for riktig, rødt for feil",
+    "viewport": {
+      "width": 960,
+      "height": 540
+    }
+  },
+  {
+    "name": "Vertspult — Brett",
+    "path": "host-brett.html",
+    "group": "Vertspult",
+    "subtitle": "Kompakt rutevelger, brukte ruter låst",
+    "viewport": {
+      "width": 375,
+      "height": 760
+    }
+  },
+  {
+    "name": "Vertspult — Spør",
+    "path": "host-spor.html",
+    "group": "Vertspult",
+    "subtitle": "Fasit bak et bevisst trykk",
+    "viewport": {
+      "width": 375,
+      "height": 760
+    }
+  },
+  {
+    "name": "Vertspult — stjeling",
+    "path": "host-spor-steal.html",
+    "group": "Vertspult",
+    "subtitle": "Velg lag, eller ingen stjal",
+    "viewport": {
+      "width": 375,
+      "height": 760
+    }
+  },
+  {
+    "name": "Vertspult — Poeng",
+    "path": "host-poeng.html",
+    "group": "Vertspult",
+    "subtitle": "Steppere, valgbart steg, angre",
+    "viewport": {
+      "width": 375,
+      "height": 760
+    }
+  },
+  {
+    "name": "Vertspult — innsats",
+    "path": "host-wager.html",
+    "group": "Vertspult",
+    "subtitle": "Hurtigvalg, men serveren klamrer",
+    "viewport": {
+      "width": 375,
+      "height": 760
+    }
+  },
+  {
+    "name": "Lag — bli med",
+    "path": "team-join.html",
+    "group": "Lagtelefon",
+    "subtitle": "Romkode, navn, og forsvar navnet",
+    "viewport": {
+      "width": 375,
+      "height": 760
+    }
+  },
+  {
+    "name": "Lag — hvilemodus",
+    "path": "team-idle.html",
+    "group": "Lagtelefon",
+    "subtitle": "95 % av kvelden ser den slik ut",
+    "viewport": {
+      "width": 375,
+      "height": 760
+    }
+  },
+  {
+    "name": "Lag — buzz",
+    "path": "team-buzz.html",
+    "group": "Lagtelefon",
+    "subtitle": "Én enorm knapp, og hva feil koster",
+    "viewport": {
+      "width": 375,
+      "height": 760
+    }
+  },
+  {
+    "name": "Lag — final, innsats",
+    "path": "team-final-wager.html",
+    "group": "Lagtelefon",
+    "subtitle": "Blindt, ingen kategori",
+    "viewport": {
+      "width": 375,
+      "height": 760
+    }
+  }
+]

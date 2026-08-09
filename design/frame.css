@@ -1,0 +1,101 @@
+/* Design-system chrome only — never shipped to the app.
+   The app's own look lives entirely in styles.css, which these previews link
+   directly so a card can never drift from what the board actually renders. */
+
+body {
+  margin: 0;
+  background: #05060f;
+  font-family: var(--font-ui);
+}
+
+.ds-frame {
+  position: relative;
+  overflow: hidden;
+  background: #000;
+}
+
+/* The board is authored at 1920×1080 and shown at half size, so a card is a
+   faithful half-scale photograph of the TV rather than a reflow of it. */
+.ds-frame--board {
+  width: 960px;
+  height: 540px;
+}
+
+.ds-frame--board .stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1920px;
+  height: 1080px;
+  transform: scale(0.5);
+  transform-origin: 0 0;
+  background: var(--board-bg);
+}
+
+.ds-frame--phone {
+  width: 375px;
+  height: 760px;
+}
+
+.ds-frame--phone .phone,
+.ds-frame--phone .host,
+.ds-frame--phone .team {
+  width: 375px;
+  height: 760px;
+  min-height: 0;
+}
+
+/* ── Token cards ─────────────────────────────────────────────────────────── */
+.ds-tokens {
+  width: 960px;
+  padding: 32px;
+  background: var(--board-bg);
+  color: var(--ink);
+}
+
+.ds-swatches {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.ds-swatch {
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.ds-swatch__chip {
+  height: 88px;
+}
+
+.ds-swatch__meta {
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.ds-swatch__name {
+  display: block;
+  font-weight: 600;
+}
+
+.ds-swatch__value {
+  color: var(--ink-dim);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.ds-type-row {
+  display: flex;
+  align-items: baseline;
+  gap: 20px;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ds-type-row__label {
+  min-width: 190px;
+  font-size: 12px;
+  color: var(--ink-dim);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}

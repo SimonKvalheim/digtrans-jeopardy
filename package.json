@@ -6,7 +6,9 @@
     "node": ">=22"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild"]
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   },
   "scripts": {
     "dev": "NODE_ENV=development tsx watch src/server/index.ts",
@@ -16,7 +18,8 @@
     "test": "node --import tsx --test src/**/*.test.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "design:build": "node scripts/build-design.mjs"
   },
   "dependencies": {
     "drizzle-orm": "^0.44.6",
