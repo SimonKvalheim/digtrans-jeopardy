@@ -6,6 +6,7 @@ import { env, isProd } from './env.ts'
 import { runMigrations } from './db/migrate.ts'
 import { db, hasDatabase, schema } from './db/index.ts'
 import { adminRouter } from './routes/admin.ts'
+import { editorRouter } from './routes/editor.ts'
 import { hostRouter } from './routes/host.ts'
 import { boardRouter } from './routes/board.ts'
 import { teamRouter } from './routes/team.ts'
@@ -51,6 +52,7 @@ app.get('/readyz', async (_req, res) => {
 })
 
 app.use('/api/admin', adminRouter)
+app.use('/api/admin', editorRouter)
 app.use('/api/host', hostRouter)
 app.use('/api/board', boardRouter)
 app.use('/api/team', teamRouter)

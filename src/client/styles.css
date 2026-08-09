@@ -1473,6 +1473,113 @@ input[type='password']:focus {
 
 .host-gate { max-width: 420px; margin: 0 auto; padding-top: 48px; }
 
+/* ── Admin / clue editor ─────────────────────────────────────────────────── */
+.admin__packs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+
+.admin__round { margin-top: 26px; }
+.admin__round h2 { font-size: 20px; color: var(--gold); }
+
+.admin__cat { margin-bottom: 16px; }
+
+.admin__cat-name {
+  margin-bottom: 6px;
+  font-size: 13px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.admin__clue {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  min-height: 46px;
+  margin-bottom: 4px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, .3);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08);
+  color: var(--ink);
+  font-size: 15px;
+  text-align: left;
+}
+
+/* An image clue with no bytes is the one fault that silently blocks publishing,
+   so it is marked in the list rather than only inside the editor. */
+.admin__clue--warn { box-shadow: inset 0 0 0 1px var(--negative); }
+
+.admin__clue-tier { font-family: var(--font-display); color: var(--gold-bright); }
+
+.admin__clue-text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.admin__clue-kind { font-size: 12px; color: var(--ink-dim); }
+
+.admin__editor {
+  margin: 16px 0 24px;
+  padding: 14px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, .42);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12);
+}
+
+.admin__editor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.admin__kinds { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.admin textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, .2);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, .3);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 17px;
+  line-height: 1.35;
+}
+
+.admin__thumb {
+  display: block;
+  width: 100%;
+  max-height: 40vh;
+  margin: 8px 0;
+  border-radius: 8px;
+  object-fit: contain;
+  background: rgba(0, 0, 0, .4);
+}
+
+.admin__warn { color: var(--negative); font-size: 14px; }
+.admin__ok { color: #6ee7a8; font-size: 14px; }
+
+.admin__problems {
+  margin: 8px 0;
+  padding-left: 20px;
+  color: var(--negative);
+  font-size: 14px;
+}
+
+.admin__game {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, .1);
+  font-size: 14px;
+}
+
 /* ── Team phone ──────────────────────────────────────────────────────────── */
 .team {
   display: flex;

@@ -26,7 +26,7 @@ const tierSchema = z
   .max(5)
   .transform((n) => n as Tier)
 
-const imageSchema = z.strictObject({
+export const imageSchema = z.strictObject({
   mime: z.enum(['image/jpeg', 'image/png', 'image/webp', 'image/gif']),
   /** Raw base64, no `data:` prefix. */
   base64: z.string().min(1),
