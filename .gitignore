@@ -1,0 +1,30 @@
+# ── Content must never enter this repo ──
+# The repo is public. Questions, answers, media and generated audio live only in
+# Railway's Postgres, imported through the PIN-gated /admin route. See docs/PRD.md §6.
+packs/
+*.pack.json
+clues*.json
+docs/_private/
+
+# Licensed or generated media (the Jeopardy theme is still in copyright)
+media/
+*.mp3
+*.wav
+*.m4a
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Build & deps
+node_modules/
+dist/
+build/
+.vite/
+*.tsbuildinfo
+
+# OS / editor
+.DS_Store
+.idea/
+*.swp
