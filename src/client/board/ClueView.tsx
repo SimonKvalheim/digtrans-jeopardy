@@ -1,6 +1,52 @@
+import { useLayoutEffect, useRef } from 'react'
 import type { BoardState } from '@shared/board-state.ts'
 import { Countdown } from './Countdown.tsx'
 import { clueKindFor } from '../clue-kinds.tsx'
+import { stageScale, tileRect } from './tile-rects.ts'
+import { teamAccent } from './team-colours.ts'
+
+/**
+ * Grows the clue out of the tile that was picked (PRD §8.4).
+ *
+ * A FLIP, so the browser only ever animates a transform: the clue is laid out
+ * at its final size and then played backwards from the tile's rectangle. The
+ * offsets are divided by the stage scale because the board is drawn at a fixed
+ * 1920×1080 and scaled to the TV, and the element's own transform lives inside
+ * that scaled coordinate system.
+ */
+function useZoomFromTile(gameClueId: string) {
+  const ref = useRef<HTMLDivElement>(null)
+  const played = useRef<string | null>(null)
+
+  useLayoutEffect(() => {
+    const el = ref.current
+    const from = tileRect(gameClueId)
+    // No measurement (a tile opened within a second of the round appearing, or
+    // the board was reloaded straight into a clue) simply means no animation.
+    if (!el || !from || played.current === gameClueId) return
+    played.current = gameClueId
+
+    const to = el.getBoundingClientRect()
+    if (to.width === 0 || to.height === 0) return
+    const scale = stageScale()
+
+    el.animate(
+      [
+        {
+          transformOrigin: 'top left',
+          transform: `translate(${(from.left - to.left) / scale}px, ${
+            (from.top - to.top) / scale
+          }px) scale(${from.width / to.width}, ${from.height / to.height})`,
+          opacity: 0.35,
+        },
+        { transformOrigin: 'top left', transform: 'none', opacity: 1 },
+      ],
+      { duration: 380, easing: 'cubic-bezier(.2,.85,.25,1)' },
+    )
+  }, [gameClueId])
+
+  return ref
+}
 
 /**
  * The open tile, full-bleed on the TV. Carries the prompt and never the answer.
@@ -16,6 +62,7 @@ export function ClueView({
   teams: BoardState['teams']
 }) {
   const owner = teams.find((t) => t.id === clue.ownerTeamId)
+  const ref = useZoomFromTile(clue.id)
 
   if (clue.phase === 'dd_wager') {
     return (
@@ -37,8 +84,18 @@ export function ClueView({
 
   const KindBoard = clueKindFor(clue.kind).Board
 
+  // The buzz flash takes the winning team's colour, so the room can see who
+  // got it from the far side without reading a word (PRD §8.4).
+  const stealer = teams.find((t) => t.name === clue.stealWinner?.teamName)
+
   return (
-    <div className={`clue clue--${clue.kind}`}>
+    <div
+      ref={ref}
+      className={`clue clue--${clue.kind}${
+        clue.stealWinner ? ' clue--buzzed' : ''
+      }`}
+      style={{ '--team-accent': teamAccent(stealer?.seat) } as React.CSSProperties}
+    >
       <div className="clue__header">
         <span>
           {clue.categoryName}

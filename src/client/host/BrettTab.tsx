@@ -74,6 +74,22 @@ export function BrettTab({
   const next = playable[currentIndex + 1]
   const left = current ? current.tiles - current.spent : 0
 
+  const setLobbyOpen = async (open: boolean) => {
+    setBusy(true)
+    setError(null)
+    try {
+      await hostFetch(`/games/${code}/lobby`, {
+        method: 'POST',
+        body: { open },
+      })
+      await onChanged()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Ukjent feil')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const goTo = async (roundId?: string) => {
     setBusy(true)
     setError(null)
@@ -144,6 +160,18 @@ export function BrettTab({
       {/* Round advance. Two taps when tiles are still live, because a stray
           thumb here wipes the board the room is halfway through. */}
       <div className="brett__rounds">
+        {/* The lobby is a screen the host raises and lowers, not a stage that
+            is passed through once — a team turning up late still needs
+            something to scan. */}
+        <button
+          type="button"
+          className="btn"
+          disabled={busy}
+          onClick={() => void setLobbyOpen(board.phase !== 'lobby')}
+        >
+          {board.phase === 'lobby' ? 'Skjul lobby — vis brettet' : 'Vis lobby (kode + QR)'}
+        </button>
+
         <div className="brett__rounds-chips">
           {playable.map((round) => (
             <button

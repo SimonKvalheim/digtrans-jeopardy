@@ -1,4 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { sting } from './audio.ts'
+
+/** The last five seconds tick, and running out is audible. PRD §8.3. */
+const TICK_FROM = 5
 
 /**
  * The visible countdown (PRD §4.2).
@@ -27,6 +31,19 @@ export function Countdown({
   const seconds = Math.ceil(remaining / 1000)
   const fraction = Math.max(0, Math.min(1, remaining / totalMs))
   const urgent = remaining <= 5000
+
+  // One sound per whole second crossed, not one per 100 ms render.
+  const lastSecond = useRef<number | null>(null)
+  useEffect(() => {
+    if (lastSecond.current === seconds) return
+    const previous = lastSecond.current
+    lastSecond.current = seconds
+    // Nothing on the first render: a board reopened with four seconds left
+    // should show four seconds, not fire a tick for arriving.
+    if (previous === null) return
+    if (seconds === 0) sting('timeUp')
+    else if (seconds <= TICK_FROM) sting('tick')
+  }, [seconds])
 
   return (
     <div className={`countdown${urgent ? ' countdown--urgent' : ''}`}>

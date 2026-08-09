@@ -102,6 +102,21 @@ body {
   to { transform: none; opacity: 1; }
 }
 
+/* A buzz landing. Two hard pulses in the team's own colour, so the room can
+   see who got it from the far side of it without reading a word. */
+@keyframes jp-buzzflash {
+  0%, 100% { opacity: 0; }
+  8%, 30% { opacity: .55; }
+  18% { opacity: .12; }
+  55% { opacity: 0; }
+}
+
+/* Final Jeopardy arrives behind a gold wipe. */
+@keyframes jp-wipe {
+  from { transform: translateX(-105%) skewX(-12deg); }
+  to { transform: translateX(210%) skewX(-12deg); }
+}
+
 /* Tiles cascade in when a round arrives, on a diagonal so it reads as one
    sweep across the board rather than six columns landing at once. */
 @keyframes jp-tilein {
@@ -151,6 +166,11 @@ body {
   flex-direction: column;
   gap: 18px;
   padding: 28px 32px 32px;
+}
+
+/* Room for the compact start gate, which is a strip along the bottom edge. */
+.board--gated {
+  padding-bottom: 96px;
 }
 
 .board__notice {
@@ -275,6 +295,158 @@ body {
 
 .board__tile--empty::after {
   display: none;
+}
+
+/* ── Lobby ───────────────────────────────────────────────────────────────────
+   Room code and QR while teams join (PRD §3.1). Both, not one: someone's
+   camera always refuses, and typing six characters is faster than debugging
+   their phone in a dark room. */
+.lobby {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 70px;
+  padding: 20px 40px;
+}
+
+.lobby__left {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-width: 0;
+}
+
+.lobby__title {
+  margin: 0;
+  font-size: 150px;
+  line-height: .92;
+  background: linear-gradient(180deg, #fff5cf, #ffcc00 52%, #c8862f);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 8px 0 rgba(0, 0, 0, .5));
+}
+
+.lobby__lead {
+  margin: 0;
+  font-size: 38px;
+  color: var(--ink-dim);
+}
+
+.lobby__url {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 62px;
+  letter-spacing: .02em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.lobby__code {
+  display: flex;
+  align-items: baseline;
+  gap: 26px;
+  padding: 14px 40px;
+  background: linear-gradient(180deg, #ffe89a, #ffcc00 60%, #e0a92f);
+  color: #1a1200;
+  box-shadow: 0 8px 0 #8a6410, 0 0 70px rgba(255, 204, 0, .35);
+  align-self: flex-start;
+}
+
+.lobby__code-label {
+  font-family: var(--font-display);
+  font-size: 30px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
+.lobby__code-value {
+  font-family: var(--font-display);
+  font-size: 96px;
+  letter-spacing: .1em;
+}
+
+.lobby__teams {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.lobby__team {
+  padding: 10px 24px;
+  background: linear-gradient(180deg, #141dbb 0%, #070c73 100%);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, .22);
+  font-family: var(--font-display);
+  font-size: 30px;
+  text-transform: uppercase;
+  animation: jp-rise .45s ease-out both;
+}
+
+.lobby__waiting {
+  font-size: 30px;
+  color: var(--ink-dim);
+}
+
+/* White plate, because that is what a scanner expects to find a code on. */
+.lobby__qr {
+  padding: 22px;
+  background: #fff;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .6);
+}
+
+.lobby__qr-img { display: block; }
+
+/* ── The one tap the board is allowed to need (PRD §8.1) ─────────────────── */
+.start-gate {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  border: 0;
+  background: rgba(3, 5, 32, .9);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.start-gate__title {
+  font-family: var(--font-display);
+  font-size: 128px;
+  text-transform: uppercase;
+  background: linear-gradient(180deg, #fff5cf, #ffcc00 52%, #c8862f);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: jp-goldpulse 2s ease-in-out infinite;
+}
+
+.start-gate__sub {
+  font-size: 40px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+/* Mid-game this must not cover the board: a reload after someone closed the
+   lid has to come back showing the game, with sound the only thing waiting. */
+.start-gate--compact {
+  inset: auto 0 0 0;
+  height: 64px;
+  flex-direction: row;
+  background: rgba(255, 204, 0, .92);
+  color: #1a1200;
+}
+
+.start-gate__compact-text {
+  font-family: var(--font-display);
+  font-size: 30px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
 }
 
 /* ── Round slam-in ───────────────────────────────────────────────────────── */
@@ -668,6 +840,31 @@ body {
   color: var(--gold-bright);
 }
 
+/* The flash itself. Over the clue, under nothing — it is meant to be seen from
+   the far side of the room and then get out of the way. */
+.clue--buzzed::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  background: var(--team-accent, var(--gold-bright));
+  mix-blend-mode: screen;
+  animation: jp-buzzflash 1s ease-out both;
+}
+
+/* ── Confetti ────────────────────────────────────────────────────────────────
+   The drawing buffer stays 1920×1080 and the element is stretched to whatever
+   box it lands in, so the physics never has to know about layout. */
+.confetti {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
 /* ── Daily Double ────────────────────────────────────────────────────────── */
 .clue--daily-double {
   position: relative;
@@ -764,18 +961,44 @@ body {
 
 /* ── Final Jeopardy (TV) ─────────────────────────────────────────────────── */
 .final {
+  position: relative;
   flex: 1;
+  /* Same trap as the clue box: a flex item will not shrink below its content
+     unless told to, and five reveal rows plus a prompt is enough to push the
+     score strip off the bottom of the TV. */
+  min-height: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 28px;
-  padding: 52px 90px 56px;
+  gap: 22px;
+  padding: 40px 90px 44px;
   background: radial-gradient(80% 70% at 50% 0%, #2a35d8 0%, #0a1075 45%, #04072e 100%);
 }
 
+/* The Final arrives behind a single gold wipe. Once, on mount — the component
+   stays mounted across all four Final phases, so it does not repeat. */
+.final::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 55%;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(255, 204, 0, 0), rgba(255, 235, 150, .5), rgba(255, 204, 0, 0));
+  animation: jp-wipe 1.15s ease-in-out both;
+}
+
+/* Not the confetti canvas: this rule used to catch it too, which dropped it
+   back into flow as a 678px-tall flex item and pushed the standings 297px off
+   the bottom of the TV. */
+.final > :not(.confetti) { position: relative; z-index: 1; }
+
 .final__title {
   margin: 0;
-  font-size: 120px;
+  font-size: 96px;
   line-height: 1;
   text-align: center;
   background: linear-gradient(180deg, #fff5cf, #ffcc00 52%, #c8862f);
@@ -847,19 +1070,23 @@ body {
 .final__reveals {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
 }
 
+/* Sized so that five surviving teams — the most there can be — fit the stage
+   with room for an answer that wraps. Measured: at the previous size five rows
+   overflowed the clipped box by 119px, and a centred flex container sheds that
+   off the top as well as the bottom. */
 .final__reveal {
   display: grid;
   grid-template-columns: 1fr 2fr auto auto;
-  gap: 26px;
+  gap: 24px;
   align-items: center;
-  padding: 20px 34px;
+  padding: 14px 30px;
   background: linear-gradient(180deg, #0d1470, #060a45);
   box-shadow: inset 0 2px 0 rgba(255, 255, 255, .1);
-  font-size: 34px;
-  line-height: 1.25;
+  font-size: 30px;
+  line-height: 1.22;
 }
 
 /* The winning row gets the gold podium treatment. */
@@ -885,9 +1112,9 @@ body {
 }
 
 .final__reveal-score {
-  min-width: 170px;
+  min-width: 160px;
   text-align: right;
-  font-size: 52px;
+  font-size: 44px;
   color: var(--gold-bright);
 }
 

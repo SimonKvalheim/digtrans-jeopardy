@@ -38,6 +38,29 @@ async function loadGame(code: string) {
 }
 
 /**
+ * Moves the board between the lobby and the grid.
+ *
+ * The lobby is a screen, not a stage of a state machine: the host puts the
+ * room code and its QR back up whenever a late team needs to join, and takes it
+ * down when play resumes. Refusing to go backwards would mean a team arriving
+ * at 21:40 has nothing to scan.
+ */
+export async function setLobby(code: string, open: boolean) {
+  const game = await loadGame(code)
+  if (game.phase.startsWith('final')) {
+    throw new Error('Finalen er i gang — lobbyen er ikke tilgjengelig')
+  }
+
+  await db()
+    .update(schema.games)
+    .set({ phase: open ? 'lobby' : 'board' })
+    .where(eq(schema.games.id, game.id))
+
+  notifyChanged(game.id)
+  return { phase: open ? 'lobby' : 'board' }
+}
+
+/**
  * Every round in the pack with tonight's progress against it, so the console
  * can say "runde 1 · 28 av 30 spilt" rather than making the host count tiles.
  */

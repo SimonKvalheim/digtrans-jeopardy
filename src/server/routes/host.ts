@@ -16,7 +16,7 @@ import {
   wagerLimit,
 } from '../game/loop.ts'
 import { buildBoardState } from '../game/state.ts'
-import { roundProgress, setRound } from '../game/rounds.ts'
+import { roundProgress, setLobby, setRound } from '../game/rounds.ts'
 import {
   finalState,
   finishFinal,
@@ -262,6 +262,11 @@ hostRouter.get('/games/:code/rounds', async (req, res) => {
     })
   }
 })
+
+/** Puts the room code and its QR back on the TV, or takes them down. */
+hostRouter.post('/games/:code/lobby', (req, res) =>
+  wrap(() => setLobby(req.params.code, Boolean(req.body?.open)))(req, res),
+)
 
 /** No body advances to the next round; a roundId jumps to that one. */
 hostRouter.post('/games/:code/round', (req, res) =>

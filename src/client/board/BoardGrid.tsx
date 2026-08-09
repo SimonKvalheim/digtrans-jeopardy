@@ -1,6 +1,7 @@
-import { useEffect, type CSSProperties } from 'react'
+import { useEffect, useRef, type CSSProperties } from 'react'
 import type { BoardState } from '@shared/board-state.ts'
 import { clueImageUrl } from '../clue-kinds.tsx'
+import { rememberTileRects, SETTLE_MS, whenSettled } from './tile-rects.ts'
 
 /**
  * The 6×5 grid. Sized by CSS grid rather than fixed pixels so that cutting
@@ -27,8 +28,30 @@ export function BoardGrid({ round }: { round: NonNullable<BoardState['round']> }
     // defeat the point entirely.
   }, [imageTiles.join()])
 
+  // Tile positions, for the zoom the clue does out of the tile that was picked.
+  const tileEls = useRef(new Map<string, HTMLElement>())
+  const gridRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const snap = () => rememberTileRects(tileEls.current)
+
+    // After the cascade lands, not on a wall-clock guess — a background tab
+    // freezes the timeline and a timer would then measure every tile at 86% of
+    // its real size. The timer stays only as a floor for the reduced-motion
+    // case, where there is no animation to wait on at all.
+    if (gridRef.current) void whenSettled(gridRef.current).then(snap)
+    const timer = setTimeout(snap, SETTLE_MS)
+
+    window.addEventListener('resize', snap)
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('resize', snap)
+    }
+  }, [round.id])
+
   return (
     <div
+      ref={gridRef}
       className="board__grid"
       style={{
         gridTemplateColumns: `repeat(${columns}, 1fr)`,
@@ -56,6 +79,10 @@ export function BoardGrid({ round }: { round: NonNullable<BoardState['round']> }
           tile ? (
             <div
               key={tile.id}
+              ref={(el) => {
+                if (el) tileEls.current.set(tile.id, el)
+                else tileEls.current.delete(tile.id)
+              }}
               className={`board__tile${tile.spent ? ' board__tile--spent' : ''}`}
               // Diagonal stagger, so a new round lands as one sweep across the
               // board rather than six columns arriving at once.

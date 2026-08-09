@@ -1,5 +1,6 @@
 import type { BoardTeam } from '@shared/board-state.ts'
 import { Countdown } from './Countdown.tsx'
+import { Confetti } from './Confetti.tsx'
 
 export interface FinalBet {
   teamId: string
@@ -89,6 +90,11 @@ export function FinalView({
 
   return (
     <div className="final">
+      {/* Mounts when the standings appear and runs itself out. The reveal and
+          the standings share this branch, so it is the phase check that keeps
+          confetti off the screen while teams are still being judged. */}
+      {state.phase === 'final_done' ? <Confetti /> : null}
+
       <h1 className="final__title">
         {state.phase === 'final_done' ? 'Stillingen' : 'Svarene'}
       </h1>

@@ -7,6 +7,10 @@ import { ClueView } from '../board/ClueView.tsx'
 import { useGameSocket } from '../team/useGameSocket.ts'
 import { FinalView, type FinalStateView } from '../board/FinalView.tsx'
 import { RoundSlam } from '../board/RoundSlam.tsx'
+import { LobbyView } from '../board/LobbyView.tsx'
+import { StartGate } from '../board/StartGate.tsx'
+import { unlockAudio } from '../board/audio.ts'
+import { useStings } from '../board/useStings.ts'
 
 /** Long enough to read the rule off the TV, short enough not to stall play. */
 const SLAM_MS = 4200
@@ -26,6 +30,21 @@ export function BoardScreen() {
 
   const [reloadKey, setReloadKey] = useState(0)
   const reload = useCallback(() => setReloadKey((n) => n + 1), [])
+
+  /**
+   * The one tap the board is allowed to need (PRD §8.1). Browsers will not let
+   * a page make a sound until a real gesture, and this board is designed to be
+   * opened and walked away from — so without this screen the room gets a silent
+   * game and no visible reason why.
+   */
+  const [started, setStarted] = useState(false)
+  const start = useCallback(() => {
+    // Fullscreen first and synchronously: awaiting the audio context before
+    // asking can spend the user activation, and then the TV stays windowed.
+    document.documentElement.requestFullscreen?.().catch(() => {})
+    void unlockAudio()
+    setStarted(true)
+  }, [])
 
   useEffect(() => {
     if (!code) {
@@ -70,6 +89,10 @@ export function BoardScreen() {
       clearInterval(timer)
     }
   }, [code, reloadKey])
+
+  // All sound comes out of the TV (PRD §8.1), so this lives here and nowhere
+  // near the host console or a team phone.
+  useStings(state)
 
   // The round-2 slam-in. Fires on a *change* of round, never on the first
   // round seen — otherwise reopening the laptop mid-game replays the fanfare
@@ -122,10 +145,19 @@ export function BoardScreen() {
     )
   }
 
+  const inLobby = state.phase === 'lobby' && !state.activeClue
+
   return (
     <Stage>
-      <div className="board">
-        {final ? (
+      {/* The compact gate is a strip along the bottom edge, so the board has to
+          give up the same 64px rather than have it laid over the score strip —
+          measured at a 32px overlap that clipped the numerals. */}
+      <div
+        className={`board${!started && !inLobby ? ' board--gated' : ''}`}
+      >
+        {inLobby ? (
+          <LobbyView state={state} />
+        ) : final ? (
           <FinalView
             state={final}
             teams={state.teams}
@@ -150,7 +182,13 @@ export function BoardScreen() {
             <h1>Venter på runde</h1>
           </div>
         )}
-        <ScoreStrip teams={state.teams} turnTeamId={state.turnTeamId} />
+        {/* The lobby has its own list of who has joined; a score strip of five
+            zeroes under it is noise. */}
+        {inLobby ? null : (
+          <ScoreStrip teams={state.teams} turnTeamId={state.turnTeamId} />
+        )}
+
+        {started ? null : <StartGate compact={!inLobby} onStart={start} />}
       </div>
     </Stage>
   )
