@@ -258,6 +258,13 @@ body {
 .clue {
   position: relative;
   flex: 1;
+  /* A flex item defaults to min-height: auto, which means "never shrink below
+     your content". A 1400px-tall photo therefore pushed the clue to 1774px
+     inside a 1080px stage and shoved the score strip off the bottom of the TV.
+     Measured, not guessed — the overflow was upward as well as downward, and
+     scrollHeight does not reveal that. */
+  min-height: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   padding: 44px 72px 40px;
@@ -370,21 +377,113 @@ body {
   box-shadow: 0 24px 70px rgba(0, 0, 0, .7);
 }
 
-/* Over the photo rather than beside it, so the picture keeps the full stage.
-   The scrim is what makes white text legible over an unknown image. */
+/* Over the photo rather than beside it, so the picture keeps the full stage. */
 .clue__image-caption {
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
+  z-index: 2;
   margin: 0;
   padding: 56px 72px 26px;
-  background: linear-gradient(180deg, rgba(4, 7, 46, 0), rgba(4, 7, 46, .92) 62%);
-  font-size: 52px;
+  /* Smaller than an ordinary prompt on purpose: this one sits on top of the
+     picture, and every pixel it covers is a pixel of the question. */
+  font-size: 46px;
   line-height: 1.16;
   text-align: center;
   text-wrap: pretty;
   text-shadow: 0 4px 12px rgba(0, 0, 0, .9);
+}
+
+/* ── Full-bleed layout for image clues (PRD §6.4) ─────────────────────────────
+   The picture *is* the question here, so it takes the whole clue box and the
+   furniture floats on top of it. In normal flow the photo only got 548px of a
+   1080px stage — half the screen for the one clue kind where the pixels are
+   the content. Scrims top and bottom keep the category, the prompt, the clock
+   and the buy-in legible over a photograph nobody has seen yet. */
+.clue--image {
+  padding: 0;
+}
+
+.clue--image .clue__image:not(.clue__image--missing) {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  z-index: 0;
+}
+
+.clue--image > :not(.clue__image) {
+  position: relative;
+  z-index: 1;
+}
+
+/* Nothing left in flow wants to grow once the photo is out of it, so this is
+   what still pins the clock and the buy-in to the bottom edge. */
+.clue--image .clue__header {
+  margin-bottom: auto;
+  padding: 44px 72px 0;
+}
+
+.clue--image .countdown {
+  margin: 0 72px 22px;
+}
+
+.clue--image .clue__footer {
+  padding: 0 72px 40px;
+}
+
+/* The scrims sit **behind the photograph and in front of the blurred surround**.
+   Laid over the photo they dimmed the top quarter and the bottom half of it —
+   and in Zoomet inn the crop is the entire puzzle, so darkening its edges makes
+   the question arbitrarily harder. Stacking is therefore explicit here:
+   backdrop 0, scrims 1, photo 2, caption 3. */
+.clue--image .clue__image-backdrop { z-index: 0; }
+.clue--image .clue__image-photo { z-index: 2; }
+.clue--image .clue__image-caption { z-index: 3; }
+
+.clue--image .clue__image::before,
+.clue--image .clue__image::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.clue--image .clue__image::before {
+  top: 0;
+  height: 240px;
+  background: linear-gradient(180deg, rgba(4, 7, 46, .95), rgba(4, 7, 46, 0));
+}
+
+.clue--image .clue__image::after {
+  bottom: 0;
+  height: 260px;
+  background: linear-gradient(0deg, rgba(4, 7, 46, .95) 30%, rgba(4, 7, 46, 0));
+}
+
+/* Sits under the gold rule, above the clock. */
+.clue--image .clue__image-caption {
+  top: 132px;
+  bottom: auto;
+  padding: 0 72px;
+}
+
+/* A plate only as wide as the words. A full-width band would blank a stripe of
+   photograph; this covers what it has to and nothing else, and it is what
+   makes the prompt legible over a picture nobody has seen yet. */
+.clue--image .clue__image-caption span {
+  display: inline-block;
+  padding: 10px 30px;
+  background: rgba(4, 7, 46, .78);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, .5);
+}
+
+/* Same problem, smaller stakes: these can end up over a bright sky. */
+.clue--image .clue__footer,
+.clue--image .countdown__seconds {
+  text-shadow: 0 3px 14px rgba(0, 0, 0, .95), 0 0 6px rgba(0, 0, 0, .8);
 }
 
 /* No bytes yet. The clue still has to be playable, so this looks like an

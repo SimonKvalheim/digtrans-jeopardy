@@ -75,7 +75,11 @@ function ImageBoard({ clue }: { clue: BoardClue }) {
         alt=""
         onError={() => setFailed(true)}
       />
-      <p className="clue__image-caption">{clue.prompt}</p>
+      {/* The span is load-bearing: it is what lets the plate behind the text
+          hug the words instead of blanking a full-width band of photograph. */}
+      <p className="clue__image-caption">
+        <span>{clue.prompt}</span>
+      </p>
     </div>
   )
 }
