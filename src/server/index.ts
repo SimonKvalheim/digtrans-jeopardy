@@ -3,6 +3,11 @@ import { fileURLToPath, URL } from 'node:url'
 import express from 'express'
 import { WebSocketServer } from 'ws'
 import { env, isProd } from './env.ts'
+import { runMigrations } from './db/migrate.ts'
+
+// Before anything is served. A failed migration exits non-zero, the health
+// check never passes, and Railway keeps the previous deployment running.
+await runMigrations()
 
 const app = express()
 app.use(express.json({ limit: '25mb' })) // pack imports carry base64 images
