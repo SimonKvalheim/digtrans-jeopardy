@@ -1,9 +1,18 @@
 import { randomUUID } from 'node:crypto'
-import { Router } from 'express'
+import { Router, type Response } from 'express'
 import { asc, desc, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { createGame } from '../game/create.ts'
 import { applyScore, undoLastScore } from '../game/score.ts'
+import {
+  closeClue,
+  loadActiveClue,
+  openClue,
+  resolveClue,
+  setTurn,
+  setWager,
+} from '../game/loop.ts'
+import { buildBoardState } from '../game/state.ts'
 import { db, schema } from '../db/index.ts'
 import { requireHostPin } from '../auth.ts'
 
@@ -162,6 +171,76 @@ hostRouter.post('/games/:code/score', async (req, res) => {
     })
   }
 })
+
+/** The host's board: same tiles as the TV, plus what the console needs. */
+hostRouter.get('/games/:code/board', async (req, res) => {
+  const state = await buildBoardState(req.params.code)
+  if (!state) {
+    res.status(404).json({ error: 'Fant ikke spillet' })
+    return
+  }
+  res.json(state)
+})
+
+/** Clue content including the answer. This is why /host is PIN-gated. */
+hostRouter.get('/games/:code/active', async (req, res) => {
+  try {
+    res.json({ active: await loadActiveClue(req.params.code) })
+  } catch (error) {
+    res.status(404).json({
+      error: error instanceof Error ? error.message : 'Ukjent feil',
+    })
+  }
+})
+
+const wrap = (fn: () => Promise<unknown>) => async (_req: unknown, res: Response) => {
+  try {
+    res.json({ ok: true, ...(await fn() as object) })
+  } catch (error) {
+    res.status(400).json({
+      error: error instanceof Error ? error.message : 'Ukjent feil',
+    })
+  }
+}
+
+hostRouter.post('/games/:code/open', (req, res) =>
+  wrap(() => openClue(req.params.code, String(req.body?.gameClueId)))(req, res),
+)
+
+const resolveSchema = z.object({
+  outcome: z.enum([
+    'own_correct',
+    'own_wrong',
+    'timeout',
+    'steal_correct',
+    'steal_wrong',
+    'no_steal',
+  ]),
+  teamId: z.uuid().optional(),
+})
+
+hostRouter.post('/games/:code/resolve', async (req, res) => {
+  const parsed = resolveSchema.safeParse(req.body)
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Ugyldig utfall' })
+    return
+  }
+  await wrap(() =>
+    resolveClue(req.params.code, parsed.data.outcome, parsed.data.teamId),
+  )(req, res)
+})
+
+hostRouter.post('/games/:code/close', (req, res) =>
+  wrap(() => closeClue(req.params.code))(req, res),
+)
+
+hostRouter.post('/games/:code/turn', (req, res) =>
+  wrap(() => setTurn(req.params.code, String(req.body?.teamId)))(req, res),
+)
+
+hostRouter.post('/games/:code/wager', (req, res) =>
+  wrap(() => setWager(req.params.code, Number(req.body?.wager)))(req, res),
+)
 
 hostRouter.post('/games/:code/undo', async (req, res) => {
   const game = await findGame(req.params.code)

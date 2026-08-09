@@ -138,6 +138,74 @@ body {
   background: transparent;
 }
 
+/* ── Open clue on the TV ─────────────────────────────────────────────────── */
+.clue {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 48px 64px;
+  background: var(--tile-bg);
+}
+
+.clue__header,
+.clue__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-display);
+  font-size: 40px;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.clue__value {
+  color: var(--gold-bright);
+}
+
+.clue__prompt {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 32px 0;
+  font-size: 84px;
+  line-height: 1.15;
+  text-align: center;
+  text-shadow: 4px 4px 0 rgba(0, 0, 0, 0.5);
+}
+
+/* The joke is that they are enormous. */
+.clue__prompt--emoji {
+  font-size: 260px;
+  line-height: 1;
+}
+
+.clue__sips {
+  color: var(--ink-dim);
+}
+
+.clue__steal {
+  color: var(--gold-bright);
+}
+
+.clue--daily-double {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: var(--gold);
+  color: #1a1200;
+}
+
+.clue--daily-double h1 {
+  font-size: 190px;
+  margin: 0;
+}
+
+.clue__dd-team {
+  font-size: 52px;
+  margin: 0;
+}
+
 /* ── Score strip ─────────────────────────────────────────────────────────── */
 .score-strip {
   display: flex;
@@ -406,4 +474,111 @@ input[type='password'] {
   max-width: 420px;
   margin: 0 auto;
   padding-top: 48px;
+}
+
+/* ── Brett tab ───────────────────────────────────────────────────────────── */
+.brett__turn {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.brett__grid {
+  display: grid;
+  gap: 4px;
+}
+
+.brett__cat {
+  padding: 6px 2px;
+  font-size: 10px;
+  line-height: 1.15;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  overflow: hidden;
+}
+
+.brett__tile {
+  min-height: 52px;
+  border: 0;
+  border-radius: 4px;
+  background: var(--tile-bg);
+  color: var(--gold-bright);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.brett__tile--spent {
+  background: var(--tile-bg-spent);
+  color: transparent;
+}
+
+.brett__tile--empty {
+  background: transparent;
+}
+
+/* ── Spør tab ────────────────────────────────────────────────────────────── */
+.spor__meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.spor__value {
+  color: var(--gold-bright);
+  font-weight: 700;
+}
+
+.spor__prompt {
+  font-size: 22px;
+  line-height: 1.35;
+  margin: 12px 0 20px;
+}
+
+.spor__spotify {
+  display: block;
+  margin-bottom: 16px;
+  text-align: center;
+  line-height: 52px;
+  text-decoration: none;
+}
+
+/* The key. Deliberately behind a tap — a phone is easy to hold where someone
+   can read it, and the PIN gate is pointless if the answer is always on. */
+.spor__answer {
+  padding: 14px;
+  border-radius: 8px;
+  background: var(--gold);
+  color: #1a1200;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.spor__owner {
+  font-size: 14px;
+  margin: 16px 0;
+}
+
+.spor__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.spor__actions .btn {
+  min-height: 72px;
+  font-size: 22px;
+}
+
+.spor__steal-title {
+  font-size: 16px;
+  color: var(--gold-bright);
+}
+
+.spor__steal-teams {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
 }

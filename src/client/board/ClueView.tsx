@@ -1,0 +1,57 @@
+import type { BoardState } from '@shared/board-state.ts'
+
+/**
+ * The open tile, full-bleed on the TV. Carries the prompt and never the answer.
+ *
+ * Emoji clues get their own scale — the whole joke is that they are enormous.
+ */
+export function ClueView({
+  clue,
+  teams,
+}: {
+  clue: NonNullable<BoardState['activeClue']>
+  teams: BoardState['teams']
+}) {
+  const owner = teams.find((t) => t.id === clue.ownerTeamId)
+
+  if (clue.phase === 'dd_wager') {
+    return (
+      <div className="clue clue--daily-double">
+        <h1>Dagens doble</h1>
+        <p className="clue__dd-team">{owner?.name ?? 'Laget'} satser…</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="clue">
+      <div className="clue__header">
+        <span>
+          {clue.categoryName}
+          {clue.fromLabel ? ` · ${clue.fromLabel}` : ''}
+        </span>
+        <span className="clue__value">
+          {clue.isDailyDouble ? 'DAGENS DOBLE' : clue.value}
+        </span>
+      </div>
+
+      <p
+        className={`clue__prompt${
+          clue.kind === 'emoji' ? ' clue__prompt--emoji' : ''
+        }`}
+      >
+        {clue.prompt}
+      </p>
+
+      <div className="clue__footer">
+        {/* Buy-in only. The app displays sips and never tracks them. */}
+        <span className="clue__sips">{clue.sips} slurker å prøve</span>
+        {clue.phase === 'steal_open' ? (
+          <span className="clue__steal">Stjeling åpen!</span>
+        ) : owner ? (
+          <span>{owner.name}</span>
+        ) : null}
+      </div>
+    </div>
+  )
+}

@@ -4,7 +4,7 @@ import type {
   BoardState,
   BoardTeam,
 } from '../../shared/board-state.ts'
-import { valueForTier } from '../../shared/scoring.ts'
+import { sipsForTier, valueForTier } from '../../shared/scoring.ts'
 import type { Tier } from '../../shared/pack-schema.ts'
 import { db, schema } from '../db/index.ts'
 
@@ -108,12 +108,64 @@ export async function buildBoardState(code: string): Promise<BoardState | null> 
     }
   }
 
+  const drinkScale = pack?.drinkScale ?? []
+
   return {
     code: game.code,
     phase: game.phase,
     round,
     teams,
     turnTeamId: game.turnTeamId,
-    drinkScale: pack?.drinkScale ?? [],
+    drinkScale,
+    activeClue: await buildActiveClue(game.activeClueId, drinkScale),
+  }
+}
+
+/**
+ * The open tile as the TV should see it: the prompt, never the answer. The
+ * answer lives only behind the host PIN.
+ */
+async function buildActiveClue(
+  activeClueId: string | null,
+  drinkScale: readonly number[],
+): Promise<BoardState['activeClue']> {
+  if (!activeClueId) return null
+
+  const [row] = await db()
+    .select({
+      id: schema.gameClues.id,
+      phase: schema.gameClues.phase,
+      ownerTeamId: schema.gameClues.ownerTeamId,
+      isDailyDouble: schema.gameClues.isDailyDouble,
+      tier: schema.clues.tier,
+      kind: schema.clues.kind,
+      payload: schema.clues.payload,
+      fromLabel: schema.clues.fromLabel,
+      categoryName: schema.categories.name,
+      valueStep: schema.rounds.valueStep,
+    })
+    .from(schema.gameClues)
+    .innerJoin(schema.clues, eq(schema.clues.id, schema.gameClues.clueId))
+    .innerJoin(
+      schema.categories,
+      eq(schema.categories.id, schema.clues.categoryId),
+    )
+    .innerJoin(schema.rounds, eq(schema.rounds.id, schema.categories.roundId))
+    .where(eq(schema.gameClues.id, activeClueId))
+
+  if (!row) return null
+
+  return {
+    id: row.id,
+    phase: row.phase,
+    categoryName: row.categoryName,
+    fromLabel: row.fromLabel,
+    tier: row.tier,
+    value: valueForTier(row.tier as Tier, row.valueStep),
+    isDailyDouble: row.isDailyDouble,
+    ownerTeamId: row.ownerTeamId,
+    kind: row.kind,
+    prompt: row.payload.prompt,
+    sips: sipsForTier(row.tier as Tier, drinkScale),
   }
 }

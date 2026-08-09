@@ -45,4 +45,22 @@ export interface BoardState {
   turnTeamId: string | null
   /** Sips per tier, indexed by tier - 1. Displayed, never tracked. */
   drinkScale: number[]
+  /**
+   * The tile currently open, if any. Carries the prompt but deliberately not
+   * the answer — the TV shows the question, the host console shows the key.
+   */
+  activeClue: {
+    id: string
+    phase: string
+    categoryName: string
+    fromLabel: string | null
+    tier: number
+    value: number
+    isDailyDouble: boolean
+    ownerTeamId: string | null
+    kind: string
+    prompt: string
+    /** Sips to attempt this tier, from the pack's drinkScale. */
+    sips: number
+  } | null
 }

@@ -3,6 +3,7 @@ import type { BoardState } from '@shared/board-state.ts'
 import { Stage } from '../Stage.tsx'
 import { BoardGrid } from '../board/BoardGrid.tsx'
 import { ScoreStrip } from '../board/ScoreStrip.tsx'
+import { ClueView } from '../board/ClueView.tsx'
 
 /**
  * The TV. Zero interaction: it is opened once, fullscreened, and left alone.
@@ -74,7 +75,9 @@ export function BoardScreen() {
   return (
     <Stage>
       <div className="board">
-        {state.round ? (
+        {state.activeClue ? (
+          <ClueView clue={state.activeClue} teams={state.teams} />
+        ) : state.round ? (
           <BoardGrid round={state.round} />
         ) : (
           <div className="board__notice">

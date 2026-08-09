@@ -1,11 +1,10 @@
-import { useCallback, useEffect, useState } from 'react'
-import {
-  hostFetch,
-  hostSession,
-  type HostGameView,
-} from '../host/api.ts'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import type { BoardState } from '@shared/board-state.ts'
+import { hostFetch, hostSession, type HostGameView } from '../host/api.ts'
 import { HostGate } from '../host/HostGate.tsx'
 import { PoengTab } from '../host/PoengTab.tsx'
+import { BrettTab } from '../host/BrettTab.tsx'
+import { SporTab, type ActiveClue } from '../host/SporTab.tsx'
 
 type Tab = 'brett' | 'spor' | 'poeng'
 
@@ -19,14 +18,32 @@ type Tab = 'brett' | 'spor' | 'poeng'
 export function HostScreen() {
   const [code, setCode] = useState(hostSession.code())
   const [view, setView] = useState<HostGameView | null>(null)
+  const [board, setBoard] = useState<BoardState | null>(null)
+  const [active, setActive] = useState<ActiveClue | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [tab, setTab] = useState<Tab>('poeng')
+  const [tab, setTab] = useState<Tab>('brett')
+
+  // Opening a tile should put the question in front of the host without a
+  // second tap — that tap costs a beat every single clue.
+  const hadActive = useRef(false)
 
   const refresh = useCallback(async () => {
     if (!code) return
     try {
-      setView(await hostFetch<HostGameView>(`/games/${code}`))
+      const [nextView, nextBoard, nextActive] = await Promise.all([
+        hostFetch<HostGameView>(`/games/${code}`),
+        hostFetch<BoardState>(`/games/${code}/board`),
+        hostFetch<{ active: ActiveClue | null }>(`/games/${code}/active`),
+      ])
+      setView(nextView)
+      setBoard(nextBoard)
+      setActive(nextActive.active)
       setError(null)
+
+      const nowActive = Boolean(nextActive.active)
+      if (nowActive && !hadActive.current) setTab('spor')
+      if (!nowActive && hadActive.current) setTab('brett')
+      hadActive.current = nowActive
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ukjent feil')
     }
@@ -34,7 +51,7 @@ export function HostScreen() {
 
   useEffect(() => {
     void refresh()
-    const timer = setInterval(refresh, 4000)
+    const timer = setInterval(refresh, 3000)
     return () => clearInterval(timer)
   }, [refresh])
 
@@ -57,14 +74,21 @@ export function HostScreen() {
       </header>
 
       <main className="host__body">
+        {tab === 'brett' && board ? (
+          <BrettTab board={board} code={code} onChanged={refresh} />
+        ) : null}
+        {tab === 'spor' && board ? (
+          <SporTab
+            active={active}
+            board={board}
+            code={code}
+            onChanged={refresh}
+          />
+        ) : null}
         {tab === 'poeng' && view ? (
           <PoengTab view={view} code={code} onChanged={refresh} />
         ) : null}
-        {tab === 'brett' ? (
-          <p className="muted">Brett-fanen kommer.</p>
-        ) : null}
-        {tab === 'spor' ? <p className="muted">Spør-fanen kommer.</p> : null}
-        {!view && !error ? <p className="muted">Laster…</p> : null}
+        {!board && !error ? <p className="muted">Laster…</p> : null}
       </main>
 
       {/* Fixed where the thumb already is. */}
