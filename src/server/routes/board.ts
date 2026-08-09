@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { buildBoardState } from '../game/state.ts'
+import { finalState } from '../game/final.ts'
 
 /**
  * Read-only and unauthenticated on purpose: the TV is a borrowed laptop that
@@ -7,6 +8,17 @@ import { buildBoardState } from '../game/state.ts'
  * clue text and no answers.
  */
 export const boardRouter = Router()
+
+/** Final state for the TV. `false` keeps wagers and answers sealed. */
+boardRouter.get('/:code/final', async (req, res) => {
+  try {
+    res.json(await finalState(req.params.code, false))
+  } catch (error) {
+    res.status(404).json({
+      error: error instanceof Error ? error.message : 'Ukjent feil',
+    })
+  }
+})
 
 boardRouter.get('/:code', async (req, res) => {
   const state = await buildBoardState(req.params.code)

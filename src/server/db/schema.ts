@@ -237,6 +237,12 @@ export const finalBets = pgTable(
       .references(() => teams.id, { onDelete: 'cascade' }),
     /** 0..score, and only for teams with score > 0. */
     wager: integer().notNull(),
+    /**
+     * Set when the wager is committed — before the clue exists. The Final is
+     * fully blind, so this must be separate from the answer lock or the wager
+     * could be chosen with the question already on screen.
+     */
+    wagerLockedAt: timestamp({ withTimezone: true }),
     answer: text(),
     verdict: text(),
     lockedAt: timestamp({ withTimezone: true }),

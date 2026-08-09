@@ -4,6 +4,7 @@ import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { db, schema } from '../db/index.ts'
 import { notifyChanged } from '../ws/hub.ts'
+import { finalState, lockFinalAnswer, lockFinalWager } from '../game/final.ts'
 
 /**
  * Team phones. No PIN: the room code is the only thing gating this, and the
@@ -110,7 +111,11 @@ teamRouter.get('/me', async (req, res) => {
   }
 
   const [game] = await db()
-    .select({ id: schema.games.id, code: schema.games.code })
+    .select({
+      id: schema.games.id,
+      code: schema.games.code,
+      phase: schema.games.phase,
+    })
     .from(schema.games)
     .where(eq(schema.games.id, team.gameId))
 
@@ -140,7 +145,80 @@ teamRouter.get('/me', async (req, res) => {
     // The owning team may not steal from itself.
     canBuzz: stealOpen && openClue?.ownerTeamId !== team.id,
     stealWinnerTeamId: openClue?.stealTeamId ?? null,
-    phase: openClue?.phase ?? 'board',
+    // During the Final there is no active clue, so the game's own phase is
+    // what tells the phone which screen to show.
+    phase: game!.phase.startsWith('final')
+      ? game!.phase
+      : (openClue?.phase ?? 'board'),
     phaseEndsAt: openClue?.phaseEndsAt?.toISOString() ?? null,
+  })
+})
+
+// ── Final Jeopardy from the phone ──────────────────────────────────────────
+
+const wagerSchema = z.object({ wager: z.number().int() })
+const answerSchema = z.object({ answer: z.string().min(1).max(300) })
+
+teamRouter.post('/final/wager', async (req, res) => {
+  const token = req.get('x-join-token') ?? ''
+  const parsed = wagerSchema.safeParse(req.body)
+  if (!token || !parsed.success) {
+    res.status(400).json({ error: 'Ugyldig innsats' })
+    return
+  }
+  try {
+    res.json({ ok: true, ...(await lockFinalWager(token, parsed.data.wager)) })
+  } catch (error) {
+    res.status(400).json({
+      error: error instanceof Error ? error.message : 'Ukjent feil',
+    })
+  }
+})
+
+teamRouter.post('/final/answer', async (req, res) => {
+  const token = req.get('x-join-token') ?? ''
+  const parsed = answerSchema.safeParse(req.body)
+  if (!token || !parsed.success) {
+    res.status(400).json({ error: 'Skriv et svar' })
+    return
+  }
+  try {
+    res.json({ ok: true, ...(await lockFinalAnswer(token, parsed.data.answer)) })
+  } catch (error) {
+    res.status(400).json({
+      error: error instanceof Error ? error.message : 'Ukjent feil',
+    })
+  }
+})
+
+/**
+ * What this phone needs for the Final: its own wager cap and lock state.
+ * Never the clue text — that is on the TV, which is what keeps heads up.
+ */
+teamRouter.get('/final', async (req, res) => {
+  const token = req.get('x-join-token') ?? ''
+  const [team] = await db()
+    .select()
+    .from(schema.teams)
+    .where(eq(schema.teams.joinToken, token))
+
+  if (!team) {
+    res.status(404).json({ error: 'Ukjent token' })
+    return
+  }
+
+  const [game] = await db()
+    .select({ code: schema.games.code })
+    .from(schema.games)
+    .where(eq(schema.games.id, team.gameId))
+
+  const state = await finalState(game!.code, false)
+  const mine = state.bets.find((b) => b.teamId === team.id) ?? null
+
+  res.json({
+    phase: state.phase,
+    playing: Boolean(mine),
+    maxWager: Math.max(0, team.score),
+    mine,
   })
 })

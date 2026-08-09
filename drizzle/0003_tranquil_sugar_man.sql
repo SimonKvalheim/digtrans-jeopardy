@@ -1,0 +1,1 @@
+ALTER TABLE "final_bets" ADD COLUMN "wagerLockedAt" timestamp with time zone;

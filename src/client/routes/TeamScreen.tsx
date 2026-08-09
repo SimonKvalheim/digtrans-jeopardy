@@ -3,6 +3,7 @@ import { fetchMe, teamSession, type TeamMe } from '../team/session.ts'
 import { useGameSocket } from '../team/useGameSocket.ts'
 import { JoinForm } from '../team/JoinForm.tsx'
 import { BuzzButton } from '../team/BuzzButton.tsx'
+import { FinalScreen } from '../team/FinalScreen.tsx'
 
 /**
  * The team phone. Deliberately almost empty — from the tape: "vi ville helst at
@@ -76,7 +77,9 @@ export function TeamScreen() {
       </header>
 
       <main className="team__body">
-        {me.canBuzz ? (
+        {me.phase.startsWith('final') ? (
+          <FinalScreen onChanged={refresh} />
+        ) : me.canBuzz ? (
           <BuzzButton
             onBuzz={() => {
               // Vibration is the only feedback that survives a loud room.

@@ -6,8 +6,9 @@ import { PoengTab } from '../host/PoengTab.tsx'
 import { BrettTab } from '../host/BrettTab.tsx'
 import { SporTab, type ActiveClue } from '../host/SporTab.tsx'
 import type { WagerLimit } from '../host/WagerPanel.tsx'
+import { FinalPanel } from '../host/FinalPanel.tsx'
 
-type Tab = 'brett' | 'spor' | 'poeng'
+type Tab = 'brett' | 'spor' | 'poeng' | 'final'
 
 /**
  * The host console. One-handed, on Simon's own phone.
@@ -94,6 +95,7 @@ export function HostScreen() {
         {tab === 'poeng' && view ? (
           <PoengTab view={view} code={code} onChanged={refresh} />
         ) : null}
+        {tab === 'final' ? <FinalPanel code={code} onChanged={refresh} /> : null}
         {!board && !error ? <p className="muted">Laster…</p> : null}
       </main>
 
@@ -104,6 +106,7 @@ export function HostScreen() {
             ['brett', 'Brett'],
             ['spor', 'Spør'],
             ['poeng', 'Poeng'],
+            ['final', 'Final'],
           ] as const
         ).map(([key, label]) => (
           <button

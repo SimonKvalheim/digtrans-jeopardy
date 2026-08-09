@@ -16,6 +16,14 @@ import {
   wagerLimit,
 } from '../game/loop.ts'
 import { buildBoardState } from '../game/state.ts'
+import {
+  finalState,
+  finishFinal,
+  judgeFinal,
+  openFinalReveal,
+  revealFinalClue,
+  startFinal,
+} from '../game/final.ts'
 import { db, schema } from '../db/index.ts'
 import { requireHostPin } from '../auth.ts'
 
@@ -249,6 +257,48 @@ hostRouter.post('/games/:code/turn', (req, res) =>
 
 hostRouter.post('/games/:code/wager', (req, res) =>
   wrap(() => setWager(req.params.code, Number(req.body?.wager)))(req, res),
+)
+
+// ── Final Jeopardy ──────────────────────────────────────────────────────────
+
+hostRouter.get('/games/:code/final', async (req, res) => {
+  try {
+    // The host is the one surface allowed the answer key.
+    res.json(await finalState(req.params.code, true))
+  } catch (error) {
+    res.status(404).json({
+      error: error instanceof Error ? error.message : 'Ukjent feil',
+    })
+  }
+})
+
+hostRouter.post('/games/:code/final/start', (req, res) =>
+  wrap(() => startFinal(req.params.code))(req, res),
+)
+
+hostRouter.post('/games/:code/final/reveal', (req, res) =>
+  wrap(() => revealFinalClue(req.params.code))(req, res),
+)
+
+hostRouter.post('/games/:code/final/collect', (req, res) =>
+  wrap(() => openFinalReveal(req.params.code))(req, res),
+)
+
+const judgeSchema = z.object({ teamId: z.uuid(), correct: z.boolean() })
+
+hostRouter.post('/games/:code/final/judge', async (req, res) => {
+  const parsed = judgeSchema.safeParse(req.body)
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Ugyldig dom' })
+    return
+  }
+  await wrap(() =>
+    judgeFinal(req.params.code, parsed.data.teamId, parsed.data.correct),
+  )(req, res)
+})
+
+hostRouter.post('/games/:code/final/finish', (req, res) =>
+  wrap(() => finishFinal(req.params.code))(req, res),
 )
 
 const timerSchema = z.object({

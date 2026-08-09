@@ -5,6 +5,7 @@ import { BoardGrid } from '../board/BoardGrid.tsx'
 import { ScoreStrip } from '../board/ScoreStrip.tsx'
 import { ClueView } from '../board/ClueView.tsx'
 import { useGameSocket } from '../team/useGameSocket.ts'
+import { FinalView, type FinalStateView } from '../board/FinalView.tsx'
 
 /**
  * The TV. Zero interaction: it is opened once, fullscreened, and left alone.
@@ -16,6 +17,7 @@ import { useGameSocket } from '../team/useGameSocket.ts'
 export function BoardScreen() {
   const code = new URLSearchParams(window.location.search).get('code') ?? ''
   const [state, setState] = useState<BoardState | null>(null)
+  const [final, setFinal] = useState<FinalStateView | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const [reloadKey, setReloadKey] = useState(0)
@@ -36,9 +38,19 @@ export function BoardScreen() {
         const res = await fetch(`/api/board/${encodeURIComponent(code)}`)
         if (!res.ok) throw new Error(`Fant ikke spillet «${code}»`)
         const next = (await res.json()) as BoardState
-        if (!cancelled) {
-          setState(next)
-          setError(null)
+        if (cancelled) return
+        setState(next)
+        setError(null)
+
+        if (next.phase.startsWith('final')) {
+          const finalRes = await fetch(
+            `/api/board/${encodeURIComponent(code)}/final`,
+          )
+          if (finalRes.ok && !cancelled) {
+            setFinal((await finalRes.json()) as FinalStateView)
+          }
+        } else if (!cancelled) {
+          setFinal(null)
         }
       } catch (err) {
         if (!cancelled) {
@@ -89,7 +101,13 @@ export function BoardScreen() {
   return (
     <Stage>
       <div className="board">
-        {state.activeClue ? (
+        {final ? (
+          <FinalView
+            state={final}
+            teams={state.teams}
+            endsAt={state.activeClue?.phaseEndsAt ?? null}
+          />
+        ) : state.activeClue ? (
           <ClueView clue={state.activeClue} teams={state.teams} />
         ) : state.round ? (
           <BoardGrid round={state.round} />

@@ -22,6 +22,13 @@
       "when": 1786299860197,
       "tag": "0002_smiling_sentry",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1786300666344,
+      "tag": "0003_tranquil_sugar_man",
+      "breakpoints": true
     }
   ]
 }
