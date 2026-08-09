@@ -1,11 +1,25 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { BoardState } from '@shared/board-state.ts'
 import { hostFetch } from './api.ts'
 import { WagerPanel, type WagerLimit } from './WagerPanel.tsx'
 
+/** Seconds left, ticking locally against a server deadline. */
+function HostClock({ endsAt }: { endsAt: string }) {
+  const [now, setNow] = useState(() => Date.now())
+
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 250)
+    return () => clearInterval(t)
+  }, [])
+
+  const left = Math.max(0, Math.ceil((new Date(endsAt).getTime() - now) / 1000))
+  return <>{left} s</>
+}
+
 export interface ActiveClue {
   gameClueId: string
   phase: string
+  phaseEndsAt: string | null
   ownerTeamId: string | null
   isDailyDouble: boolean
   wager: number | null
@@ -79,6 +93,11 @@ export function SporTab({
     }
   }
 
+  const timer = (action: 'extend' | 'pause' | 'restart') =>
+    act(() =>
+      hostFetch(`/games/${code}/timer`, { method: 'POST', body: { action } }),
+    )
+
   const resolve = (outcome: string, teamId?: string) =>
     act(() =>
       hostFetch(`/games/${code}/resolve`, {
@@ -134,6 +153,31 @@ export function SporTab({
       <p className="spor__owner muted">
         {owner ? `Svarer: ${owner.name}` : 'Ingen eier satt'}
       </p>
+
+      {/* The host can always override the clock (PRD §4.2). */}
+      {!finished ? (
+        <div className="spor__timer">
+          <span className="spor__timer-value">
+            {active.phaseEndsAt ? <HostClock endsAt={active.phaseEndsAt} /> : '– pauset'}
+          </span>
+          <button
+            type="button"
+            className="chip"
+            disabled={busy}
+            onClick={() => timer(active.phaseEndsAt ? 'pause' : 'restart')}
+          >
+            {active.phaseEndsAt ? 'Pause' : 'Start'}
+          </button>
+          <button
+            type="button"
+            className="chip"
+            disabled={busy}
+            onClick={() => timer('extend')}
+          >
+            +15s
+          </button>
+        </div>
+      ) : null}
 
       {error ? <p className="host__error">{error}</p> : null}
 

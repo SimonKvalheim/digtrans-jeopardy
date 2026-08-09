@@ -59,6 +59,12 @@ export interface BoardState {
     isDailyDouble: boolean
     /** Locked Daily Double wager, once the owning team has committed to it. */
     wager: number | null
+    /**
+     * ISO instant the countdown runs out, or null when untimed. An absolute
+     * instant rather than seconds remaining, so the board animates smoothly
+     * between polls and a reload resumes the same countdown.
+     */
+    phaseEndsAt: string | null
     ownerTeamId: string | null
     kind: string
     prompt: string

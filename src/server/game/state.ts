@@ -7,6 +7,7 @@ import type {
 import { sipsForTier, valueForTier } from '../../shared/scoring.ts'
 import type { Tier } from '../../shared/pack-schema.ts'
 import { db, schema } from '../db/index.ts'
+import { applyExpiry } from './loop.ts'
 
 /** A tile is spent once its clue has been resolved one way or another. */
 const SPENT_PHASES = new Set(['revealed', 'done'])
@@ -17,6 +18,10 @@ const SPENT_PHASES = new Set(['revealed', 'done'])
  * room, so it is told what tiles exist, not what is behind them.
  */
 export async function buildBoardState(code: string): Promise<BoardState | null> {
+  // Countdowns are applied on read rather than by a background scheduler, so
+  // this has to happen before the state is assembled.
+  await applyExpiry(code)
+
   const database = db()
 
   const [game] = await database
@@ -138,6 +143,7 @@ async function buildActiveClue(
       ownerTeamId: schema.gameClues.ownerTeamId,
       isDailyDouble: schema.gameClues.isDailyDouble,
       wager: schema.gameClues.wager,
+      phaseEndsAt: schema.gameClues.phaseEndsAt,
       tier: schema.clues.tier,
       kind: schema.clues.kind,
       payload: schema.clues.payload,
@@ -165,6 +171,7 @@ async function buildActiveClue(
     value: valueForTier(row.tier as Tier, row.valueStep),
     isDailyDouble: row.isDailyDouble,
     wager: row.wager,
+    phaseEndsAt: row.phaseEndsAt?.toISOString() ?? null,
     ownerTeamId: row.ownerTeamId,
     kind: row.kind,
     prompt: row.payload.prompt,

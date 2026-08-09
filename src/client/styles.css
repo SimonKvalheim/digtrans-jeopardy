@@ -184,6 +184,46 @@ body {
   color: var(--ink-dim);
 }
 
+/* ── Countdown (TV) ──────────────────────────────────────────────────────── */
+.countdown {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 16px;
+}
+
+.countdown__bar {
+  flex: 1;
+  height: 22px;
+  background: rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+/* Scale rather than width: it animates on the compositor, so the bar stays
+   smooth even while the board is fetching. */
+.countdown__fill {
+  height: 100%;
+  background: var(--gold-bright);
+  transform-origin: left center;
+  will-change: transform;
+}
+
+.countdown__seconds {
+  min-width: 110px;
+  font-family: var(--font-display);
+  font-size: 66px;
+  text-align: right;
+  color: var(--gold-bright);
+}
+
+.countdown--urgent .countdown__fill {
+  background: var(--negative);
+}
+
+.countdown--urgent .countdown__seconds {
+  color: var(--negative);
+}
+
 .clue__steal {
   color: var(--gold-bright);
 }
@@ -597,6 +637,20 @@ input[type='password'] {
 .spor__actions .btn {
   min-height: 72px;
   font-size: 22px;
+}
+
+.spor__timer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.spor__timer-value {
+  flex: 1;
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--gold-bright);
 }
 
 .spor__steal-title {

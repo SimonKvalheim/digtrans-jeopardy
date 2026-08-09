@@ -8,6 +8,13 @@
       "when": 1786295752317,
       "tag": "0000_loud_storm",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1786299329870,
+      "tag": "0001_parallel_magus",
+      "breakpoints": true
     }
   ]
 }

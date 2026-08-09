@@ -1,0 +1,1 @@
+ALTER TABLE "game_clues" ADD COLUMN "phaseEndsAt" timestamp (3) with time zone;

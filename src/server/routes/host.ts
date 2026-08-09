@@ -5,6 +5,8 @@ import { z } from 'zod'
 import { createGame } from '../game/create.ts'
 import { applyScore, undoLastScore } from '../game/score.ts'
 import {
+  adjustTimer,
+  applyExpiry,
   closeClue,
   loadActiveClue,
   openClue,
@@ -186,6 +188,8 @@ hostRouter.get('/games/:code/board', async (req, res) => {
 /** Clue content including the answer. This is why /host is PIN-gated. */
 hostRouter.get('/games/:code/active', async (req, res) => {
   try {
+    // Same reason as the board: countdowns land on read, so this runs first.
+    await applyExpiry(req.params.code)
     const [active, limit] = await Promise.all([
       loadActiveClue(req.params.code),
       wagerLimit(req.params.code),
@@ -246,6 +250,19 @@ hostRouter.post('/games/:code/turn', (req, res) =>
 hostRouter.post('/games/:code/wager', (req, res) =>
   wrap(() => setWager(req.params.code, Number(req.body?.wager)))(req, res),
 )
+
+const timerSchema = z.object({
+  action: z.enum(['extend', 'pause', 'restart']),
+})
+
+hostRouter.post('/games/:code/timer', async (req, res) => {
+  const parsed = timerSchema.safeParse(req.body)
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Ugyldig klokkehandling' })
+    return
+  }
+  await wrap(() => adjustTimer(req.params.code, parsed.data.action))(req, res)
+})
 
 hostRouter.post('/games/:code/undo', async (req, res) => {
   const game = await findGame(req.params.code)

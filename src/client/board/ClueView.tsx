@@ -1,4 +1,5 @@
 import type { BoardState } from '@shared/board-state.ts'
+import { Countdown } from './Countdown.tsx'
 
 /**
  * The open tile, full-bleed on the TV. Carries the prompt and never the answer.
@@ -55,6 +56,13 @@ export function ClueView({
       >
         {clue.prompt}
       </p>
+
+      {clue.phaseEndsAt ? (
+        <Countdown
+          endsAt={clue.phaseEndsAt}
+          totalMs={clue.phase === 'steal_open' ? 10_000 : 30_000}
+        />
+      ) : null}
 
       <div className="clue__footer">
         {/* Buy-in only. The app displays sips and never tracks them. */}

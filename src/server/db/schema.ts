@@ -166,6 +166,13 @@ export const gameClues = pgTable(
     /** Randomised per game, so nobody learns positions from a previous run. */
     isDailyDouble: boolean().notNull().default(false),
     wager: integer(),
+    /**
+     * When the current phase's countdown runs out. Stored as an absolute
+     * instant rather than a remaining duration so that a board reload — or a
+     * redeploy that drops every socket — resumes the same countdown instead of
+     * restarting it. Null means untimed, which is also how the host pauses.
+     */
+    phaseEndsAt: timestamp({ withTimezone: true, precision: 3 }),
   },
   (t) => [unique().on(t.gameId, t.clueId)],
 )

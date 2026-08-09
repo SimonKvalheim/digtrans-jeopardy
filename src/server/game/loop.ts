@@ -24,6 +24,146 @@ export type Outcome =
   | 'steal_wrong'
   | 'no_steal'
 
+/** Timers from PRD §4.2. The Final's 60s belongs to Final Jeopardy, not here. */
+export const CLUE_MS = 30_000
+export const STEAL_MS = 10_000
+
+/**
+ * Applies a countdown that has run out.
+ *
+ * Called from the read paths, so it fires within one poll without needing a
+ * background scheduler that a redeploy would kill. Every transition is a
+ * conditional update guarded on the phase it is leaving, and the score only
+ * moves if that update actually changed a row — the board and the console both
+ * poll, and without the guard an expiry would penalise a team twice.
+ */
+export async function applyExpiry(code: string) {
+  const game = await loadGame(code)
+  if (!game.activeClueId) return null
+
+  const [row] = await db()
+    .select({
+      id: schema.gameClues.id,
+      phase: schema.gameClues.phase,
+      phaseEndsAt: schema.gameClues.phaseEndsAt,
+      ownerTeamId: schema.gameClues.ownerTeamId,
+      isDailyDouble: schema.gameClues.isDailyDouble,
+      tier: schema.clues.tier,
+      valueStep: schema.rounds.valueStep,
+    })
+    .from(schema.gameClues)
+    .innerJoin(schema.clues, eq(schema.clues.id, schema.gameClues.clueId))
+    .innerJoin(
+      schema.categories,
+      eq(schema.categories.id, schema.clues.categoryId),
+    )
+    .innerJoin(schema.rounds, eq(schema.rounds.id, schema.categories.roundId))
+    .where(eq(schema.gameClues.id, game.activeClueId))
+
+  // No deadline means untimed, or paused by the host.
+  if (!row?.phaseEndsAt) return null
+  if (row.phaseEndsAt.getTime() > Date.now()) return null
+
+  if (row.phase === 'clue_open') {
+    const won = await db()
+      .update(schema.gameClues)
+      .set({
+        phase: 'steal_open',
+        phaseEndsAt: new Date(Date.now() + STEAL_MS),
+      })
+      .where(
+        and(
+          eq(schema.gameClues.id, row.id),
+          eq(schema.gameClues.phase, 'clue_open'),
+        ),
+      )
+      .returning({ id: schema.gameClues.id })
+
+    if (won.length === 0) return null
+
+    // Timing out is treated exactly as an owner miss: half the value.
+    const value = valueForTier(row.tier as Tier, row.valueStep)
+    if (row.ownerTeamId) {
+      await applyScore({
+        gameId: game.id,
+        teamId: row.ownerTeamId,
+        delta: scoreDelta({ kind: 'timeout' }, value),
+        kind: 'own',
+        clueId: row.id,
+        note: 'timeout',
+      })
+    }
+    return 'timeout'
+  }
+
+  if (row.phase === 'steal_open') {
+    const won = await db()
+      .update(schema.gameClues)
+      .set({ phase: 'revealed', phaseEndsAt: null })
+      .where(
+        and(
+          eq(schema.gameClues.id, row.id),
+          eq(schema.gameClues.phase, 'steal_open'),
+        ),
+      )
+      .returning({ id: schema.gameClues.id })
+
+    if (won.length === 0) return null
+    // Triple stumper: nobody loses points, the room drinks instead.
+    return 'no_steal'
+  }
+
+  return null
+}
+
+/**
+ * Host override on the clock (PRD §4.2: "host can always override"). Pausing
+ * clears the deadline entirely, which is also what makes a clue untimed while
+ * someone argues.
+ */
+export async function adjustTimer(
+  code: string,
+  action: 'extend' | 'pause' | 'restart',
+) {
+  const game = await loadGame(code)
+  if (!game.activeClueId) throw new Error('Ingen aktiv rute')
+
+  const [row] = await db()
+    .select({
+      phase: schema.gameClues.phase,
+      phaseEndsAt: schema.gameClues.phaseEndsAt,
+    })
+    .from(schema.gameClues)
+    .where(eq(schema.gameClues.id, game.activeClueId))
+
+  if (!row) throw new Error('Fant ikke ruten')
+
+  const base = row.phase === 'steal_open' ? STEAL_MS : CLUE_MS
+  let phaseEndsAt: Date | null
+
+  switch (action) {
+    case 'pause':
+      phaseEndsAt = null
+      break
+    case 'restart':
+      phaseEndsAt = new Date(Date.now() + base)
+      break
+    case 'extend':
+      // From now if the clock was paused, otherwise from what is left.
+      phaseEndsAt = new Date(
+        Math.max(Date.now(), row.phaseEndsAt?.getTime() ?? Date.now()) + 15_000,
+      )
+      break
+  }
+
+  await db()
+    .update(schema.gameClues)
+    .set({ phaseEndsAt })
+    .where(eq(schema.gameClues.id, game.activeClueId))
+
+  return { phaseEndsAt }
+}
+
 async function loadGame(code: string) {
   const [game] = await db()
     .select()
@@ -42,6 +182,7 @@ export async function loadActiveClue(code: string) {
     .select({
       gameClueId: schema.gameClues.id,
       phase: schema.gameClues.phase,
+      phaseEndsAt: schema.gameClues.phaseEndsAt,
       ownerTeamId: schema.gameClues.ownerTeamId,
       isDailyDouble: schema.gameClues.isDailyDouble,
       wager: schema.gameClues.wager,
@@ -96,7 +237,15 @@ export async function openClue(code: string, gameClueId: string) {
 
     await tx
       .update(schema.gameClues)
-      .set({ phase, ownerTeamId: game.turnTeamId })
+      .set({
+        phase,
+        ownerTeamId: game.turnTeamId,
+        // Wagering is untimed on purpose — it is a negotiation with the room,
+        // not a race, and the clue text has not been shown yet.
+        phaseEndsAt: gameClue.isDailyDouble
+          ? null
+          : new Date(Date.now() + CLUE_MS),
+      })
       .where(eq(schema.gameClues.id, gameClueId))
 
     await tx
@@ -180,7 +329,13 @@ export async function resolveClue(
 
   await db()
     .update(schema.gameClues)
-    .set({ phase: nextPhase as 'done' })
+    .set({
+      phase: nextPhase as 'done',
+      // The steal window is the only phase this can open onto; everything else
+      // is terminal and untimed.
+      phaseEndsAt:
+        nextPhase === 'steal_open' ? new Date(Date.now() + STEAL_MS) : null,
+    })
     .where(eq(schema.gameClues.id, active.gameClueId))
 
   return { outcome, delta, teamId: scoredTeamId, phase: nextPhase }
