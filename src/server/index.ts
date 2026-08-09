@@ -4,6 +4,8 @@ import express from 'express'
 import { WebSocketServer } from 'ws'
 import { env, isProd } from './env.ts'
 import { runMigrations } from './db/migrate.ts'
+import { db, hasDatabase, schema } from './db/index.ts'
+import { adminRouter } from './routes/admin.ts'
 
 // Before anything is served. A failed migration exits non-zero, the health
 // check never passes, and Railway keeps the previous deployment running.
@@ -17,6 +19,27 @@ app.use(express.json({ limit: '25mb' })) // pack imports carry base64 images
 app.get('/healthz', (_req, res) => {
   res.json({ ok: true, env: env.NODE_ENV })
 })
+
+// Deliberately separate from the health check: this one does touch Postgres,
+// so there is a way to tell "the app is down" from "the database is down"
+// without a laptop. Useful at 21:30 with only a phone.
+app.get('/readyz', async (_req, res) => {
+  if (!hasDatabase()) {
+    res.status(503).json({ ok: false, db: 'DATABASE_URL not set' })
+    return
+  }
+  try {
+    const rows = await db().select({ slug: schema.packs.slug }).from(schema.packs)
+    res.json({ ok: true, db: 'up', packs: rows.map((r) => r.slug) })
+  } catch (error) {
+    res.status(503).json({
+      ok: false,
+      db: error instanceof Error ? error.message : String(error),
+    })
+  }
+})
+
+app.use('/api/admin', adminRouter)
 
 const httpServer = createServer(app)
 
