@@ -1,0 +1,39 @@
+<!-- @dsCard group="Admin" -->
+<!doctype html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<title>Admin — klue-editor</title>
+<link rel="stylesheet" href="./styles.css">
+<link rel="stylesheet" href="./frame.css">
+</head>
+<body>
+<div class="ds-frame ds-frame--phone"><div class="phone admin">
+  <div class="phone__body">
+    <h1>Admin</h1>
+    <div class="admin__packs">
+      <button class="chip chip--active">fadderuke-2026 (kladd)</button>
+    </div>
+    <p class="muted">61 klør · kladd · 2 mangler bilde</p>
+    <button class="btn btn--primary">Publiser pakken</button>
+    <div class="admin__editor">
+      <div class="admin__editor-head"><strong>Tier 3</strong><button class="chip">Lukk</button></div>
+      <label class="field"><span>Type</span>
+        <div class="admin__kinds">
+          <button class="chip">text</button>
+          <button class="chip">emoji</button>
+          <button class="chip chip--active">image</button>
+          <button class="chip">audio_host</button>
+        </div>
+      </label>
+      <label class="field"><span>Spørsmål</span><textarea rows="3">Hvilket byggverk er dette?</textarea></label>
+      <label class="field"><span>Fasit</span><input type="text" value="Studentersamfundet"></label>
+      <div class="field"><span>Bilde</span>
+        <p class="admin__warn">Mangler bilde — blokkerer publisering.</p>
+      </div>
+      <button class="btn btn--primary">Lagre</button>
+    </div>
+  </div>
+</div></div>
+</body>
+</html>

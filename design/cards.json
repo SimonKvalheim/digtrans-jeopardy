@@ -20,6 +20,46 @@
     }
   },
   {
+    "name": "Lobby",
+    "path": "board-lobby.html",
+    "group": "Brett",
+    "subtitle": "Romkode og QR mens lagene blir med",
+    "viewport": {
+      "width": 960,
+      "height": 540
+    }
+  },
+  {
+    "name": "Trykk for å starte",
+    "path": "board-start-gate.html",
+    "group": "Brett",
+    "subtitle": "Låser opp lyd og fullskjerm i samme trykk",
+    "viewport": {
+      "width": 960,
+      "height": 540
+    }
+  },
+  {
+    "name": "Dobbel Jeopardy",
+    "path": "board-round-slam.html",
+    "group": "Brett",
+    "subtitle": "Runden og regelen som følger med den",
+    "viewport": {
+      "width": 960,
+      "height": 540
+    }
+  },
+  {
+    "name": "Bildespørsmål",
+    "path": "board-clue-image.html",
+    "group": "Brett",
+    "subtitle": "Bildet fyller ruten, men beskjæres aldri",
+    "viewport": {
+      "width": 960,
+      "height": 540
+    }
+  },
+  {
     "name": "Rutenett",
     "path": "board-grid.html",
     "group": "Brett",
@@ -154,6 +194,16 @@
     "path": "host-wager.html",
     "group": "Vertspult",
     "subtitle": "Hurtigvalg, men serveren klamrer",
+    "viewport": {
+      "width": 375,
+      "height": 760
+    }
+  },
+  {
+    "name": "Admin — klue-editor",
+    "path": "admin-clue-editor.html",
+    "group": "Admin",
+    "subtitle": "For skrivefeilen som dukker opp klokka 20:00",
     "viewport": {
       "width": 375,
       "height": 760

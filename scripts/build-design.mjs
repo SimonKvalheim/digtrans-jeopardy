@@ -1,5 +1,6 @@
 import { cp, mkdir, writeFile, readdir, rm } from 'node:fs/promises'
 import { fileURLToPath, URL } from 'node:url'
+import qrcode from 'qrcode-generator'
 
 /**
  * Builds the Claude Design bundle from the app's own stylesheet.
@@ -79,6 +80,44 @@ const countdown = (seconds, fraction, urgent = false) => `
 const clueFrame = (inner, turnIndex = 1) =>
   `<div class="board">${inner}${scoreStrip(turnIndex)}</div>`
 
+/** The same encoder the board uses, so the card is a real, scannable code. */
+const qr = (value, size) => {
+  const code = qrcode(0, 'M')
+  code.addData(value)
+  code.make()
+  const count = code.getModuleCount()
+  const quiet = 4
+  const span = count + quiet * 2
+  let d = ''
+  for (let row = 0; row < count; row += 1) {
+    for (let col = 0; col < count; col += 1) {
+      if (code.isDark(row, col)) d += `M${col} ${row}h1v1h-1z`
+    }
+  }
+  return `<svg class="lobby__qr-img" width="${size}" height="${size}" viewBox="0 0 ${span} ${span}">
+  <rect width="${span}" height="${span}" fill="#ffffff"/>
+  <g transform="translate(${quiet} ${quiet})" fill="#04072e"><path d="${d}"/></g>
+</svg>`
+}
+
+/**
+ * An invented picture for the image-clue card. Real crops live only in
+ * Postgres; this is four coloured corners so the card still demonstrates that
+ * the photo is contained rather than cropped.
+ */
+const SAMPLE_IMAGE =
+  'data:image/svg+xml;utf8,' +
+  encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1200">
+      <rect width="900" height="1200" fill="#e6e9f2"/>
+      <rect x="0" y="0" width="180" height="180" fill="#ff2828"/>
+      <rect x="720" y="0" width="180" height="180" fill="#28ff28"/>
+      <rect x="0" y="1020" width="180" height="180" fill="#3c78ff"/>
+      <rect x="720" y="1020" width="180" height="180" fill="#ffdc00"/>
+      <rect x="0" y="560" width="900" height="80" fill="#101010"/>
+    </svg>`,
+  )
+
 const clue = ({
   category,
   value,
@@ -88,8 +127,11 @@ const clue = ({
   footerRight = 'Kollektivet',
   extras = '',
   timer = countdown(21, 0.7),
+  /** Replaces the prompt entirely — the image kind renders its own middle. */
+  body = undefined,
+  className = '',
 }) => `
-<div class="clue">
+<div class="clue${className}">
   <div class="clue__header">
     <span>${category}</span>
     <span class="clue__value"><span class="clue__value-label">${
@@ -97,7 +139,12 @@ const clue = ({
     }</span>${String(value).replace('DAGENS DOBLE · ', '')}</span>
   </div>
   ${extras}
-  <p class="clue__prompt${emoji ? ' clue__prompt--emoji' : ''}">${prompt}</p>
+  ${
+    // The span matches what FitText renders, so a card cannot look right while
+    // the app looks wrong.
+    body ??
+    `<div class="clue__prompt${emoji ? ' clue__prompt--emoji' : ''}"><span>${prompt}</span></div>`
+  }
   ${timer}
   <div class="clue__footer">
     <span class="clue__sips">${sips} slurker å prøve</span>
@@ -172,6 +219,88 @@ const CARDS = [
   },
 
   // ── Board ──
+  {
+    file: 'board-lobby',
+    name: 'Lobby',
+    group: 'Brett',
+    subtitle: 'Romkode og QR mens lagene blir med',
+    kind: 'board',
+    body: `<div class="board">
+  <div class="lobby">
+    <div class="lobby__left">
+      <h1 class="lobby__title">Jeopardy</h1>
+      <p class="lobby__lead">Ett lag, én telefon. Skann eller skriv:</p>
+      <p class="lobby__url">jeopardy.example.app/t?code=NTNU</p>
+      <div class="lobby__code">
+        <span class="lobby__code-label">Romkode</span>
+        <strong class="lobby__code-value">NTNU</strong>
+      </div>
+      <div class="lobby__teams">
+        ${TEAMS.slice(0, 3).map((t) => `<span class="lobby__team">${t.name}</span>`).join('')}
+      </div>
+    </div>
+    <div class="lobby__qr">${qr('https://jeopardy.example.app/t?code=NTNU', 520)}</div>
+  </div>
+</div>`,
+  },
+  {
+    file: 'board-start-gate',
+    name: 'Trykk for å starte',
+    group: 'Brett',
+    subtitle: 'Låser opp lyd og fullskjerm i samme trykk',
+    kind: 'board',
+    body: `<div class="board">
+  <div class="lobby">
+    <div class="lobby__left">
+      <h1 class="lobby__title">Jeopardy</h1>
+      <p class="lobby__lead">Ett lag, én telefon. Skann eller skriv:</p>
+      <p class="lobby__url">jeopardy.example.app/t?code=NTNU</p>
+    </div>
+    <div class="lobby__qr">${qr('https://jeopardy.example.app/t?code=NTNU', 520)}</div>
+  </div>
+  <button class="start-gate">
+    <span class="start-gate__title">Trykk for å starte</span>
+    <span class="start-gate__sub">Lyd og fullskjerm</span>
+  </button>
+</div>`,
+  },
+  {
+    file: 'board-round-slam',
+    name: 'Dobbel Jeopardy',
+    group: 'Brett',
+    subtitle: 'Runden og regelen som følger med den',
+    kind: 'board',
+    body: `<div class="board">
+  <div class="round-slam round-slam--double">
+    <h1 class="round-slam__title">Dobbel Jeopardy</h1>
+    <p class="round-slam__values">200 – 1000 · poengene dobles, slurkene gjør ikke det</p>
+    <p class="round-slam__turn">Lavest poengsum velger først: <strong>Team Bortistu</strong></p>
+  </div>
+  ${scoreStrip(2)}
+</div>`,
+  },
+  {
+    file: 'board-clue-image',
+    name: 'Bildespørsmål',
+    group: 'Brett',
+    subtitle: 'Bildet fyller ruten, men beskjæres aldri',
+    kind: 'board',
+    body: clueFrame(
+      clue({
+        className: ' clue--image',
+        category: 'Zoomet inn',
+        value: 300,
+        prompt: '',
+        sips: 6,
+        timer: countdown(24, 0.8),
+        body: `<div class="clue__image">
+    <div class="clue__image-backdrop" style="background-image:url('${SAMPLE_IMAGE}')"></div>
+    <img class="clue__image-photo" src="${SAMPLE_IMAGE}" alt="">
+    <p class="clue__image-caption"><span>Hvilket byggverk er dette?</span></p>
+  </div>`,
+      }),
+    ),
+  },
   {
     file: 'board-grid',
     name: 'Rutenett',
@@ -460,6 +589,41 @@ const CARDS = [
   <button class="btn btn--primary">Lås innsatsen og vis spørsmålet</button>
 </div>`,
     ),
+  },
+
+  {
+    file: 'admin-clue-editor',
+    name: 'Admin — klue-editor',
+    group: 'Admin',
+    subtitle: 'For skrivefeilen som dukker opp klokka 20:00',
+    kind: 'phone',
+    body: `<div class="phone admin">
+  <div class="phone__body">
+    <h1>Admin</h1>
+    <div class="admin__packs">
+      <button class="chip chip--active">fadderuke-2026 (kladd)</button>
+    </div>
+    <p class="muted">61 klør · kladd · 2 mangler bilde</p>
+    <button class="btn btn--primary">Publiser pakken</button>
+    <div class="admin__editor">
+      <div class="admin__editor-head"><strong>Tier 3</strong><button class="chip">Lukk</button></div>
+      <label class="field"><span>Type</span>
+        <div class="admin__kinds">
+          <button class="chip">text</button>
+          <button class="chip">emoji</button>
+          <button class="chip chip--active">image</button>
+          <button class="chip">audio_host</button>
+        </div>
+      </label>
+      <label class="field"><span>Spørsmål</span><textarea rows="3">Hvilket byggverk er dette?</textarea></label>
+      <label class="field"><span>Fasit</span><input type="text" value="Studentersamfundet"></label>
+      <div class="field"><span>Bilde</span>
+        <p class="admin__warn">Mangler bilde — blokkerer publisering.</p>
+      </div>
+      <button class="btn btn--primary">Lagre</button>
+    </div>
+  </div>
+</div>`,
   },
 
   // ── Team phone ──
