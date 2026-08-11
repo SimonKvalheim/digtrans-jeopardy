@@ -45,9 +45,10 @@ export function broadcast(gameId: string, message: unknown) {
  * Tells every surface in a game that something changed and it should refetch.
  *
  * A nudge rather than the state itself: the board, the host console and a team
- * phone are each entitled to see different things — most importantly, only the
- * host may see answers — so each refetches from the endpoint that already
- * enforces that. It keeps one rule about who sees what instead of three.
+ * phone are each entitled to see different things — most importantly, the host
+ * may see an answer before the room does — so each refetches from the endpoint
+ * that already enforces that. It keeps one rule about who sees what instead of
+ * three, and it is why this socket never has to be trusted with clue content.
  */
 export function notifyChanged(gameId: string) {
   broadcast(gameId, { type: 'changed' })

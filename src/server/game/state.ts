@@ -6,12 +6,10 @@ import type {
 } from '../../shared/board-state.ts'
 import { sipsForTier, valueForTier } from '../../shared/scoring.ts'
 import type { Tier } from '../../shared/pack-schema.ts'
+import { isAnswerOut } from '../../shared/clue-phases.ts'
 import { db, schema } from '../db/index.ts'
 import { applyExpiry } from './loop.ts'
 import { buzzOrder } from './buzz.ts'
-
-/** A tile is spent once its clue has been resolved one way or another. */
-const SPENT_PHASES = new Set(['revealed', 'done'])
 
 /**
  * Presence, never the bytes. The board polls this whole payload every two
@@ -22,9 +20,10 @@ const HAS_IMAGE = sql<boolean>`${schema.clueMedia.imageBytes} is not null`
 const HAS_REVEAL = sql<boolean>`${schema.clueMedia.revealBytes} is not null`
 
 /**
- * Assembles everything the TV draws. Deliberately excludes clue prompts and
- * answers: the board is a borrowed laptop and the least trusted device in the
- * room, so it is told what tiles exist, not what is behind them.
+ * Assembles everything the TV draws. The tile grid deliberately excludes clue
+ * prompts and answers: the board is a borrowed laptop and the least trusted
+ * device in the room, so it is told what tiles exist, not what is behind them.
+ * Only the open clue carries text, and only a finished one carries its answer.
  */
 export async function buildBoardState(code: string): Promise<BoardState | null> {
   // Countdowns are applied on read rather than by a background scheduler, so
@@ -117,7 +116,9 @@ export async function buildBoardState(code: string): Promise<BoardState | null> 
           tier: row.tier,
           value: valueForTier(row.tier as Tier, activeRound.valueStep),
           sips: sipsForTier(row.tier as Tier, drinkScale),
-          spent: SPENT_PHASES.has(row.phase),
+          // A tile is spent once its clue has been resolved one way or another
+          // — the same condition that makes its answer public.
+          spent: isAnswerOut(row.phase),
           hasImage: Boolean(row.hasImage),
           hasRevealImage: Boolean(row.hasRevealImage),
         })
@@ -148,8 +149,10 @@ export async function buildBoardState(code: string): Promise<BoardState | null> 
 }
 
 /**
- * The open tile as the TV should see it: the prompt, never the answer. The
- * answer lives only behind the host PIN.
+ * The open tile as the TV should see it: the prompt always, and the answer only
+ * once the clue is over. Until then the answer lives behind the host PIN, which
+ * is the whole reason the gate below is a condition on the phase rather than
+ * something the board is trusted to honour.
  */
 async function buildActiveClue(
   activeClueId: string | null,
@@ -168,6 +171,7 @@ async function buildActiveClue(
       phaseEndsAt: schema.gameClues.phaseEndsAt,
       tier: schema.clues.tier,
       kind: schema.clues.kind,
+      answer: schema.clues.answer,
       payload: schema.clues.payload,
       fromLabel: schema.clues.fromLabel,
       categoryName: schema.categories.name,
@@ -204,6 +208,9 @@ async function buildActiveClue(
     hasRevealImage: Boolean(row.hasRevealImage),
     sips: sipsForTier(row.tier as Tier, drinkScale),
     stealWinner: await buildStealWinner(row.id, row.stealTeamId),
+    // The gate lives here and not in the board UI: a clue in `steal_open` is
+    // one a team is still allowed to answer.
+    answer: isAnswerOut(row.phase) ? row.answer : null,
   }
 }
 

@@ -1,7 +1,8 @@
 import { useLayoutEffect, useRef } from 'react'
 import type { BoardState } from '@shared/board-state.ts'
 import { Countdown } from './Countdown.tsx'
-import { clueKindFor } from '../clue-kinds.tsx'
+import { clueKindFor, isRevealing } from '../clue-kinds.tsx'
+import { FitText } from './FitText.tsx'
 import { stageScale, tileRect } from './tile-rects.ts'
 import { teamAccent } from './team-colours.ts'
 
@@ -49,7 +50,8 @@ function useZoomFromTile(gameClueId: string) {
 }
 
 /**
- * The open tile, full-bleed on the TV. Carries the prompt and never the answer.
+ * The open tile, full-bleed on the TV. Carries the prompt, and the answer once
+ * the server has decided the clue is over and sent one.
  *
  * What sits in the middle comes from the clue-kind registry, so adding a kind
  * is a renderer and not an edit here (PRD §6.4).
@@ -83,6 +85,7 @@ export function ClueView({
     clue.wager === owner.score
 
   const KindBoard = clueKindFor(clue.kind).Board
+  const revealing = isRevealing(clue)
 
   // The buzz flash takes the winning team's colour, so the room can see who
   // got it from the far side without reading a word (PRD §8.4).
@@ -93,7 +96,7 @@ export function ClueView({
       ref={ref}
       className={`clue clue--${clue.kind}${
         clue.stealWinner ? ' clue--buzzed' : ''
-      }`}
+      }${revealing ? ' clue--revealed' : ''}`}
       style={{ '--team-accent': teamAccent(stealer?.seat) } as React.CSSProperties}
     >
       <div className="clue__header">
@@ -116,6 +119,25 @@ export function ClueView({
       ) : null}
 
       <KindBoard clue={clue} />
+
+      {/* The whole point of the change: the answer was only ever spoken, and a
+          room of thirty with drinks in hand does not reliably hear it. FitText
+          because the stage is a fixed 1920×1080 with overflow hidden — a long
+          answer would be clipped in front of everyone rather than wrap.
+
+          The floor is 24 rather than 40 because FitText stops shrinking at
+          `min` and then simply overflows. Measured: the schema's 300-character
+          maximum answer needs ~28px in the 160px band an image clue gives it,
+          and 40 left 76px of gold hanging over the steal banner. Nothing
+          shorter ever reaches the floor — the real answers land at 96. */}
+      {revealing ? (
+        <FitText
+          className="clue__answer"
+          text={clue.answer}
+          max={96}
+          min={24}
+        />
+      ) : null}
 
       {/* The margin is shown on purpose: it is what stops the argument. */}
       {clue.stealWinner ? (

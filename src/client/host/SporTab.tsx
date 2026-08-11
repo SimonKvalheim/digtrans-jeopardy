@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { BoardState } from '@shared/board-state.ts'
 import { hostFetch, type HostActiveClue } from './api.ts'
 import { WagerPanel, type WagerLimit } from './WagerPanel.tsx'
-import { clueKindFor } from '../clue-kinds.tsx'
+import { clueKindFor, isAnswerOut } from '../clue-kinds.tsx'
 
 /** Seconds left, ticking locally against a server deadline. */
 function HostClock({ endsAt }: { endsAt: string }) {
@@ -50,7 +50,7 @@ export function SporTab({
 
   const owner = board.teams.find((t) => t.id === active.ownerTeamId)
   const stealOpen = active.phase === 'steal_open'
-  const finished = active.phase === 'done' || active.phase === 'revealed'
+  const finished = isAnswerOut(active.phase)
 
   // The wager is blind and comes before any clue text — so this panel replaces
   // the question entirely rather than sitting above it.

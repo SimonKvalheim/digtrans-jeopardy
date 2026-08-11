@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import type { BoardState } from '@shared/board-state.ts'
 import type { ClueKind } from '@shared/clue-kinds.ts'
+import { isAnswerOut } from '@shared/clue-phases.ts'
 import type { HostActiveClue } from './host/api.ts'
 import { FitText } from './board/FitText.tsx'
 
@@ -34,28 +35,54 @@ export function clueRevealImageUrl(gameClueId: string): string {
   return `/api/media/${gameClueId}/reveal`
 }
 
+// Re-exported: the definition moved to shared once the server needed it too.
+export { isAnswerOut }
+
 /**
- * Phases in which the answer is already public: `revealed` is nobody getting
- * it, `done` is somebody getting it. The tile stays on screen through both
- * until the host closes it, and the room wants the full picture in either.
+ * Whether the card is in its reveal state, narrowing `answer` to a string.
+ *
+ * A type predicate rather than a plain boolean so one check does both jobs: the
+ * caller gets the layout flag and the non-null answer off the same line, rather
+ * than testing the same fact twice to satisfy the compiler.
+ *
+ * Equivalent in practice to `isAnswerOut(clue.phase)` — the server reads phase
+ * and answer off one row, and `clues.answer` is not null. Reach for this one
+ * when the answer text is about to be rendered, and for `isAnswerOut` when only
+ * the phase matters.
  */
-export function isAnswerOut(phase: string): boolean {
-  return phase === 'revealed' || phase === 'done'
+export function isRevealing(
+  clue: BoardClue,
+): clue is BoardClue & { answer: string } {
+  return clue.answer !== null
 }
 
 function TextBoard({ clue }: { clue: BoardClue }) {
-  return <FitText className="clue__prompt" text={clue.prompt} max={92} min={38} />
+  // Once the answer is up the question has done its job. It stays on screen for
+  // whoever walked in halfway through, but it stops being the thing you read.
+  const out = isRevealing(clue)
+  return (
+    <FitText
+      className="clue__prompt"
+      text={clue.prompt}
+      max={out ? 46 : 92}
+      min={out ? 24 : 38}
+    />
+  )
 }
 
 function EmojiBoard({ clue }: { clue: BoardClue }) {
   // The whole joke is that they are enormous — hence a floor that is still
-  // larger than an ordinary prompt's ceiling.
+  // larger than an ordinary prompt's ceiling. Once the answer is out the
+  // ceiling has to drop *below* the answer's 96, not merely shrink: measured at
+  // 120 the emoji still outgrew the gold underneath it, which reads as the
+  // riddle winning an argument it has already lost.
+  const out = isRevealing(clue)
   return (
     <FitText
       className="clue__prompt clue__prompt--emoji"
       text={clue.prompt}
-      max={240}
-      min={96}
+      max={out ? 64 : 240}
+      min={out ? 40 : 96}
       step={12}
     />
   )
@@ -77,6 +104,10 @@ function ImageBoard({ clue }: { clue: BoardClue }) {
   // Once the answer is out, the crop has done its job and the room wants the
   // whole picture. A missing or broken reveal falls back to the crop rather
   // than to nothing — the question image is always the safe thing to show.
+  //
+  // Gated on the phase, not on `isRevealing`: the swap belongs to the room
+  // once the clue is publicly resolved, not to the coincidence that the
+  // answer field is populated.
   const revealing =
     isAnswerOut(clue.phase) && clue.hasRevealImage && !revealFailed
   const src = revealing ? clueRevealImageUrl(clue.id) : clueImageUrl(clue.id)
@@ -85,9 +116,21 @@ function ImageBoard({ clue }: { clue: BoardClue }) {
   // able to run the clue: fall back to the prompt, and say why it is bare so
   // nobody stands there waiting for a picture that is never coming.
   if ((!clue.hasImage && !revealing) || (failed && !revealing)) {
+    // Demoted exactly as TextBoard demotes, and not only for looks: this
+    // branch renders a real .clue__prompt, so .clue--revealed collapses its
+    // band — and FitText re-runs on [text, max, min, step] and nothing else.
+    // Leaving the range at 92/38 meant the effect never fired again and the
+    // font size fitted to the full-height band stayed inline over a band a
+    // third of the size. Measured at 125px of overflow across the note.
+    const out = isRevealing(clue)
     return (
       <div className="clue__image clue__image--missing">
-        <FitText className="clue__prompt" text={clue.prompt} max={92} min={38} />
+        <FitText
+          className="clue__prompt"
+          text={clue.prompt}
+          max={out ? 46 : 92}
+          min={out ? 24 : 38}
+        />
         <p className="clue__image-note">Bildet mangler — les spørsmålet høyt.</p>
       </div>
     )
@@ -121,12 +164,18 @@ function ImageBoard({ clue }: { clue: BoardClue }) {
 
 /** The TV shows the note and the prompt; the music comes off the host phone. */
 function AudioHostBoard({ clue }: { clue: BoardClue }) {
+  const out = isRevealing(clue)
   return (
     <div className="clue__audio">
       <span className="clue__audio-note" aria-hidden="true">
         ♪
       </span>
-      <FitText className="clue__prompt" text={clue.prompt} max={80} min={36} />
+      <FitText
+        className="clue__prompt"
+        text={clue.prompt}
+        max={out ? 40 : 80}
+        min={out ? 24 : 36}
+      />
     </div>
   )
 }
