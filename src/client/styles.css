@@ -719,6 +719,15 @@ body {
   padding: 0 72px;
 }
 
+/* …but not once the answer is out. On a portrait reveal — the face behind the
+   cropped eyes — top: 132px lands the plate straight across the eyes of the
+   picture it exists to show. The prompt has already done its work by then, so
+   it leaves rather than moves: anywhere else on the photo is still covering
+   the payoff. */
+.clue--image .clue__image--reveal .clue__image-caption {
+  display: none;
+}
+
 /* A plate only as wide as the words. A full-width band would blank a stripe of
    photograph; this covers what it has to and nothing else, and it is what
    makes the prompt legible over a picture nobody has seen yet. */
