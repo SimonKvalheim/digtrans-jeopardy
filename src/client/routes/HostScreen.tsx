@@ -7,6 +7,7 @@ import { BrettTab } from '../host/BrettTab.tsx'
 import { SporTab, type ActiveClue } from '../host/SporTab.tsx'
 import type { WagerLimit } from '../host/WagerPanel.tsx'
 import { FinalPanel } from '../host/FinalPanel.tsx'
+import { GamePicker } from '../host/GamePicker.tsx'
 
 type Tab = 'brett' | 'spor' | 'poeng' | 'final'
 
@@ -25,6 +26,7 @@ export function HostScreen() {
   const [wagerLimit, setWagerLimit] = useState<WagerLimit | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<Tab>('brett')
+  const [picking, setPicking] = useState(false)
 
   // Opening a tile should put the question in front of the host without a
   // second tap — that tap costs a beat every single clue.
@@ -75,9 +77,40 @@ export function HostScreen() {
   return (
     <div className="phone host">
       <header className="host__header">
-        <span className="host__code">{code}</span>
+        {/* The code is the switcher: it is already the thing the host looks at
+            to check which game this phone is driving. */}
+        <button
+          type="button"
+          className="host__code host__code--button"
+          onClick={() => setPicking(true)}
+        >
+          {code}
+          <span aria-hidden="true">▾</span>
+        </button>
         {error ? <span className="host__error">{error}</span> : null}
       </header>
+
+      {picking ? (
+        <GamePicker
+          current={code}
+          onPick={(next) => {
+            setCode(next)
+            // The old game's board and open clue must not linger under the new
+            // code — refresh runs on the next tick with the new code anyway,
+            // but a stale board for even one frame is a wrong tile grid.
+            setBoard(null)
+            setView(null)
+            setActive(null)
+            setError(null)
+            // Land on Brett, and forget the old game's open clue so the
+            // auto-jump to Spør fires on the next real tile rather than on
+            // whatever the game being left happened to have open.
+            setTab('brett')
+            hadActive.current = false
+          }}
+          onClose={() => setPicking(false)}
+        />
+      ) : null}
 
       <main className="host__body">
         {tab === 'brett' && board ? (

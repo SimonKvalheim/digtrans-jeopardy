@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { Router, type Response } from 'express'
-import { asc, desc, eq } from 'drizzle-orm'
+import { asc, desc, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { createGame } from '../game/create.ts'
 import { applyScore, undoLastScore } from '../game/score.ts'
@@ -67,6 +67,32 @@ hostRouter.post('/games', async (req, res) => {
 /** Confirms the PIN without doing anything, so the console can gate its UI. */
 hostRouter.post('/session', (_req, res) => {
   res.json({ ok: true })
+})
+
+/**
+ * Every game the console could switch to.
+ *
+ * The code used to be typed once at the gate and then kept in localStorage
+ * forever, so moving from a rehearsal game to the real one meant clearing
+ * browser storage on a phone in a dark room. The team count is here because it
+ * is what actually distinguishes tonight's game from last week's test.
+ */
+hostRouter.get('/games', async (_req, res) => {
+  const rows = await db()
+    .select({
+      code: schema.games.code,
+      phase: schema.games.phase,
+      createdAt: schema.games.createdAt,
+      packSlug: schema.packs.slug,
+      teams: sql<number>`(
+        select count(*) from ${schema.teams} where ${schema.teams.gameId} = ${schema.games.id}
+      )`,
+    })
+    .from(schema.games)
+    .innerJoin(schema.packs, eq(schema.packs.id, schema.games.packId))
+    .orderBy(desc(schema.games.createdAt))
+
+  res.json({ games: rows.map((r) => ({ ...r, teams: Number(r.teams) })) })
 })
 
 async function findGame(code: string) {
