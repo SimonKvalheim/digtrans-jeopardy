@@ -586,6 +586,40 @@ body {
   text-shadow: none;
 }
 
+/* ── The answer, once the clue is over ───────────────────────────────────────
+   The room's problem is that the answer was only ever spoken across a loud
+   flat. So it takes the card: the question demotes to a fixed band under the
+   gold rule for anyone who walked in late, and everything below it is the
+   answer. Both bands are a definite height because FitText measures its box —
+   an auto-height band would always "fit" and grow until it overflowed the TV.
+
+   Anton against the question's UI face, and flat gold rather than the clipped
+   gradient .clue__value uses: image clues need an opaque plate behind these
+   words, and a background on the inner span would paint over a
+   background-clip: text gradient. */
+.clue--revealed .clue__prompt {
+  flex: 0 0 220px;
+}
+
+.clue__answer {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 0 40px 8px;
+  font-family: var(--font-display);
+  /* Only where FitText starts measuring from — its inline style wins. */
+  font-size: 96px;
+  line-height: 1.1;
+  letter-spacing: .02em;
+  text-align: center;
+  text-wrap: pretty;
+  color: var(--gold-bright);
+  text-shadow: 0 6px 0 rgba(0, 0, 0, .55);
+  animation: jp-reveal .42s cubic-bezier(.2, .8, .3, 1) both;
+}
+
 .clue__sips {
   color: var(--ink-dim);
 }
@@ -735,6 +769,27 @@ body {
   text-shadow: 0 3px 14px rgba(0, 0, 0, .95), 0 0 6px rgba(0, 0, 0, .8);
 }
 
+/* The photo is absolute at inset 0 and the header takes margin-bottom: auto,
+   so a flex: 1 answer would fight the layout instead of filling it. A fixed
+   band instead, sized so that it and the footer below it together still fit
+   inside the existing 260px bottom scrim — which is already dark enough to
+   read gold against, and free by then because a terminal phase has no
+   countdown. */
+.clue--image .clue__answer {
+  flex: 0 0 160px;
+  padding: 0 72px;
+}
+
+/* A plate only as wide as the words, exactly as .clue__image-caption span does.
+   A full-width band would blank a stripe of the photograph that the reveal
+   exists to show. */
+.clue--image .clue__answer span {
+  display: inline-block;
+  padding: 8px 32px;
+  background: rgba(4, 7, 46, .82);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, .5);
+}
+
 /* No bytes yet. The clue still has to be playable, so this looks like an
    ordinary text clue with a quiet note rather than a broken frame. */
 .clue__image--missing {
@@ -773,6 +828,31 @@ body {
 .clue__audio .clue__prompt {
   flex: 0 1 auto;
   padding-top: 12px;
+}
+
+/* audio_host nests its prompt inside .clue__audio, so the demotion has to take
+   the container: a rule on .clue__prompt alone loses to .clue__audio
+   .clue__prompt, which is the same specificity and comes later. The note
+   shrinks with it — it still says this was a music clue, it just stops being
+   the largest thing on a card whose point is now the answer. */
+.clue--revealed .clue__audio {
+  flex: 0 0 220px;
+}
+
+.clue--revealed .clue__audio-note {
+  flex: 0 0 auto;
+  font-size: 64px;
+  /* The 60px blur was tuned against a 150px glyph. At 64px it is nearly as
+     wide as the character and reads as haze rather than glow. */
+  text-shadow: 0 0 24px rgba(255, 204, 0, .5);
+}
+
+/* The note is pinned and this takes what is left, so FitText measures a box
+   the flex layout decided rather than one that sizes to the font it is about
+   to change. */
+.clue--revealed .clue__audio .clue__prompt {
+  flex: 1;
+  min-height: 0;
 }
 
 /* Buzz winner lands as an event, not a label. */
