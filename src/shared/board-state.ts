@@ -1,10 +1,11 @@
 /**
  * What the TV needs to draw itself, and nothing more.
  *
- * The board never receives clue text or answers for unopened tiles — a laptop
- * plugged into a TV is the least trusted device in the room, and the whole
- * point of /host being PIN-gated is undone if the answers ride along in every
- * board payload.
+ * The board never receives clue text or answers for tiles it has not opened — a
+ * laptop plugged into a TV is the least trusted device in the room, and the
+ * whole point of /host being PIN-gated is undone if the answers ride along in
+ * every board payload. Even the open clue's answer is withheld until its phase
+ * is terminal; see `activeClue.answer`.
  */
 
 export interface BoardTile {
@@ -103,5 +104,13 @@ export interface BoardState {
      * deliberately — it is what stops the argument before it starts.
      */
     stealWinner: { teamName: string; marginMs: number } | null
+    /**
+     * The correct answer — but only once the clue is terminal (`revealed` or
+     * `done`). Null in every other phase, and decided on the server rather
+     * than merely hidden by the board: /api/board/:code is unauthenticated by
+     * design, so an answer that reaches this payload early is an answer a team
+     * can curl while they are still supposed to be guessing.
+     */
+    answer: string | null
   } | null
 }

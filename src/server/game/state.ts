@@ -168,6 +168,7 @@ async function buildActiveClue(
       phaseEndsAt: schema.gameClues.phaseEndsAt,
       tier: schema.clues.tier,
       kind: schema.clues.kind,
+      answer: schema.clues.answer,
       payload: schema.clues.payload,
       fromLabel: schema.clues.fromLabel,
       categoryName: schema.categories.name,
@@ -204,6 +205,9 @@ async function buildActiveClue(
     hasRevealImage: Boolean(row.hasRevealImage),
     sips: sipsForTier(row.tier as Tier, drinkScale),
     stealWinner: await buildStealWinner(row.id, row.stealTeamId),
+    // The gate lives here and not in the board UI: a clue in `steal_open` is
+    // one a team is still allowed to answer.
+    answer: isAnswerOut(row.phase) ? row.answer : null,
   }
 }
 
