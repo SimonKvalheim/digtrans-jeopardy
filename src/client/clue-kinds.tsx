@@ -72,15 +72,17 @@ function TextBoard({ clue }: { clue: BoardClue }) {
 
 function EmojiBoard({ clue }: { clue: BoardClue }) {
   // The whole joke is that they are enormous — hence a floor that is still
-  // larger than an ordinary prompt's ceiling. Halved once the answer is out:
-  // still the biggest thing in the top band, no longer the biggest on the TV.
+  // larger than an ordinary prompt's ceiling. Once the answer is out the
+  // ceiling has to drop *below* the answer's 96, not merely shrink: measured at
+  // 120 the emoji still outgrew the gold underneath it, which reads as the
+  // riddle winning an argument it has already lost.
   const out = isRevealing(clue)
   return (
     <FitText
       className="clue__prompt clue__prompt--emoji"
       text={clue.prompt}
-      max={out ? 120 : 240}
-      min={out ? 64 : 96}
+      max={out ? 64 : 240}
+      min={out ? 40 : 96}
       step={12}
     />
   )
@@ -114,9 +116,21 @@ function ImageBoard({ clue }: { clue: BoardClue }) {
   // able to run the clue: fall back to the prompt, and say why it is bare so
   // nobody stands there waiting for a picture that is never coming.
   if ((!clue.hasImage && !revealing) || (failed && !revealing)) {
+    // Demoted exactly as TextBoard demotes, and not only for looks: this
+    // branch renders a real .clue__prompt, so .clue--revealed collapses its
+    // band — and FitText re-runs on [text, max, min, step] and nothing else.
+    // Leaving the range at 92/38 meant the effect never fired again and the
+    // font size fitted to the full-height band stayed inline over a band a
+    // third of the size. Measured at 125px of overflow across the note.
+    const out = isRevealing(clue)
     return (
       <div className="clue__image clue__image--missing">
-        <FitText className="clue__prompt" text={clue.prompt} max={92} min={38} />
+        <FitText
+          className="clue__prompt"
+          text={clue.prompt}
+          max={out ? 46 : 92}
+          min={out ? 24 : 38}
+        />
         <p className="clue__image-note">Bildet mangler — les spørsmålet høyt.</p>
       </div>
     )

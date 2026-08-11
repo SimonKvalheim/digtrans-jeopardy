@@ -588,26 +588,74 @@ body {
 
 /* ── The answer, once the clue is over ───────────────────────────────────────
    The room's problem is that the answer was only ever spoken across a loud
-   flat. So it takes the card: the question demotes to a fixed band under the
-   gold rule for anyone who walked in late, and everything below it is the
-   answer. Both bands are a definite height because FitText measures its box —
-   an auto-height band would always "fit" and grow until it overflowed the TV.
+   flat. So it takes the card: the question demotes to a band under the gold
+   rule for anyone who walked in late, and everything below it is the answer.
+   Both bands are a definite height because FitText measures its box — an
+   auto-height band would always "fit" and grow until it overflowed the TV.
+
+   Definite, but **not** a fixed pixel height. The clue box is not a constant:
+   measured at 1920×1080, it is 702px of content on the plain board and 420px
+   inside the studio frame (the default), and a steal banner — a routine
+   outcome, and one that persists into the terminal phase — takes another 104px
+   off that. The first cut of this used a 220px question band, which on its own
+   is more than the 186px the studio screen has left after a steal: the answer
+   band collapsed to 8px, FitText took its `availableHeight <= 0` exit without
+   ever setting a size, and the answer painted at the 96px declared below,
+   sliced off the bottom of the TV and across the gold banner.
+
+   A grow factor against a zero basis is just as definite as a pixel — the flex
+   algorithm hands each band a resolved height before FitText measures it — and
+   it is the same layout on both screens. The two bands together are exactly
+   the free space, so they can never sum to more than the box.
 
    Anton against the question's UI face, and flat gold rather than the clipped
    gradient .clue__value uses: image clues need an opaque plate behind these
    words, and a background on the inner span would paint over a
    background-clip: text gradient. */
 .clue--revealed .clue__prompt {
-  flex: 0 0 220px;
+  flex: 1 1 0;
+  /* 30px top and bottom is a third of what this band gets on the studio screen
+     with a steal up, and it buys nothing: the band already centres its own
+     text, so the padding was never what kept the words off the edges. */
+  padding: 8px 40px;
+  /* Deliberate, and a last resort. At the schema's 600-character maximum
+     (src/shared/clue-kinds.ts) a prompt cannot be made legible in the ~76px
+     this band gets on the studio screen with a steal banner up — FitText's
+     floor stops at 24px, three times too large. Clipping a question the host
+     has already read aloud, inside its own band, is the least-bad end of that:
+     the alternative is 80px of it painted across the gold answer, which is the
+     one thing on the card the room still needs. The real pack's longest prompt
+     is 207 characters and fits with room to spare. */
+  overflow: hidden;
+  /* `safe`, so a prompt that still does not fit loses its tail rather than its
+     first line as well — centred content sheds overflow in both directions. */
+  align-items: safe center;
 }
 
 .clue__answer {
-  flex: 1;
-  min-height: 0;
+  /* Twice the question's share: the answer is why the card is on screen. */
+  flex: 2 1 0;
+  /* The floor, and the priority order it encodes. Both bands grow out of the
+     *free* space, so anything else that lands in the clue is taken off them
+     both — and if the furniture ever filled the box (the all-in banner is the
+     one that can), a proportional answer band would resolve to zero and put
+     FitText straight back into its `availableHeight <= 0` exit. So the answer
+     keeps 120px whatever happens and the question is the band that yields:
+     .clue--revealed .clue__prompt is `overflow: hidden`, so a question squeezed
+     to nothing disappears quietly instead of painting across the card.
+
+     Explicit rather than the `min-height: 0` this replaced: a definite floor
+     still lets the item shrink past its content, which is what that 0 was for.
+     Measured: the tightest reachable board — studio, steal banner up — leaves
+     228px of free space and a 152px answer band, so this never binds there. */
+  min-height: 120px;
   display: grid;
   place-items: center;
   margin: 0;
-  padding: 0 40px 8px;
+  /* No vertical padding, so `availableHeight` is the band itself and FitText's
+     `availableHeight <= 0` exit — the failure above — cannot be reached while
+     the clue has any free space at all. */
+  padding: 0 40px;
   font-family: var(--font-display);
   /* Only where FitText starts measuring from — its inline style wins. */
   font-size: 96px;
@@ -780,6 +828,15 @@ body {
   padding: 0 72px;
 }
 
+/* …except when there are no bytes. That branch is the one image clue that
+   stays in normal flow, so a band sized for an answer floating over a photo at
+   inset 0 is instead 160px taken off the prompt underneath it. Proportional
+   here for the same reason as everywhere else — the sibling combinator works
+   because ClueView renders the kind before the answer. */
+.clue__image--missing ~ .clue__answer {
+  flex: 2 1 0;
+}
+
 /* A plate only as wide as the words, exactly as .clue__image-caption span does.
    A full-width band would blank a stripe of the photograph that the reveal
    exists to show. */
@@ -804,6 +861,15 @@ body {
   letter-spacing: .1em;
   text-transform: uppercase;
   color: var(--negative);
+}
+
+/* Subtracted from the band before the prompt sees any of it, exactly like the
+   audio note, and that band is only ~76px on the studio screen with a steal
+   up. The note is a message to the host about a clue that is now over, so it
+   is the thing that gives way. */
+.clue--revealed .clue__image-note {
+  margin-bottom: 6px;
+  font-size: 20px;
 }
 
 /* ── audio_host on the TV ────────────────────────────────────────────────────
@@ -832,27 +898,35 @@ body {
 
 /* audio_host nests its prompt inside .clue__audio, so the demotion has to take
    the container: a rule on .clue__prompt alone loses to .clue__audio
-   .clue__prompt, which is the same specificity and comes later. The note
-   shrinks with it — it still says this was a music clue, it just stops being
-   the largest thing on a card whose point is now the answer. */
+   .clue__prompt, which is the same specificity and comes later. Same grow
+   factor as a bare prompt, for the same reason — see .clue--revealed
+   .clue__prompt above. */
 .clue--revealed .clue__audio {
-  flex: 0 0 220px;
+  flex: 1 1 0;
 }
 
+/* The note shrinks with it — it still says this was a music clue, it just
+   stops being the largest thing on a card whose point is now the answer. 36px
+   rather than the 64px this started at: the note is subtracted from the band
+   before the prompt sees any of it, and the band is only ~76px on the studio
+   screen once a steal banner is up, so a 64px glyph left the question nothing
+   to be measured against. */
 .clue--revealed .clue__audio-note {
   flex: 0 0 auto;
-  font-size: 64px;
-  /* The 60px blur was tuned against a 150px glyph. At 64px it is nearly as
-     wide as the character and reads as haze rather than glow. */
-  text-shadow: 0 0 24px rgba(255, 204, 0, .5);
+  font-size: 36px;
+  /* The 60px blur was tuned against a 150px glyph. At 36px it is wider than
+     the character and reads as haze rather than glow. */
+  text-shadow: 0 0 16px rgba(255, 204, 0, .5);
 }
 
 /* The note is pinned and this takes what is left, so FitText measures a box
    the flex layout decided rather than one that sizes to the font it is about
-   to change. */
+   to change. The padding is restated because .clue__audio .clue__prompt above
+   sets a padding-top of its own at the same specificity as the demotion. */
 .clue--revealed .clue__audio .clue__prompt {
   flex: 1;
   min-height: 0;
+  padding: 4px 40px 0;
 }
 
 /* Buzz winner lands as an event, not a label. */
@@ -873,6 +947,18 @@ body {
   text-transform: uppercase;
   box-shadow: 0 8px 0 #8a6410, 0 0 60px rgba(255, 204, 0, .45);
   animation: jp-rise .4s ease-out both;
+}
+
+/* Smaller once the answer is out, and still there. It is the only thing on the
+   card naming who got it — the verdict line is deliberately out of scope — so
+   it has to survive; it just does not need 48px type when it is no longer the
+   news. Measured: 104px including its margin down to 61.5px, which on the
+   studio screen is most of what the answer band needs to exist at all. */
+.clue--revealed .clue__buzz-winner {
+  margin-bottom: 12px;
+  padding: 6px 30px;
+  font-size: 30px;
+  box-shadow: 0 5px 0 #8a6410, 0 0 40px rgba(255, 204, 0, .4);
 }
 
 /* ── Countdown (TV) ──────────────────────────────────────────────────────── */
@@ -1021,6 +1107,17 @@ body {
   text-transform: uppercase;
   text-shadow: 0 6px 0 rgba(0, 0, 0, .5), 0 0 60px rgba(255, 204, 0, .45);
   animation: jp-goldpulse 1.6s ease-in-out infinite;
+}
+
+/* A true Daily Double answered wrong is the one card that carries this banner
+   *and* the answer, and at 120px it takes 144px of a studio clue box that only
+   has 420px. Measured: the question band collapsed to nothing, FitText took its
+   `availableHeight <= 0` exit, and the prompt painted at 92px inside a band too
+   small to show any of it. The banner has already had its moment — it slammed
+   in when the tile opened — so it is the thing that gives way. */
+.clue--revealed .clue__all-in {
+  font-size: 44px;
+  text-shadow: 0 3px 0 rgba(0, 0, 0, .5), 0 0 30px rgba(255, 204, 0, .45);
 }
 
 /* ── Wager panel (host) ──────────────────────────────────────────────────────

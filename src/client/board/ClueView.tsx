@@ -122,13 +122,19 @@ export function ClueView({
       {/* The whole point of the change: the answer was only ever spoken, and a
           room of thirty with drinks in hand does not reliably hear it. FitText
           because the stage is a fixed 1920×1080 with overflow hidden — a long
-          answer would be clipped in front of everyone rather than wrap. */}
+          answer would be clipped in front of everyone rather than wrap.
+
+          The floor is 24 rather than 40 because FitText stops shrinking at
+          `min` and then simply overflows. Measured: the schema's 300-character
+          maximum answer needs ~28px in the 160px band an image clue gives it,
+          and 40 left 76px of gold hanging over the steal banner. Nothing
+          shorter ever reaches the floor — the real answers land at 96. */}
       {revealing ? (
         <FitText
           className="clue__answer"
           text={clue.answer}
           max={96}
-          min={40}
+          min={24}
         />
       ) : null}
 
