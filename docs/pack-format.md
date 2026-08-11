@@ -1,11 +1,15 @@
 # Clue pack format
 
-The wire format for `POST /admin/import`, defined by
+The wire format for `POST /api/admin/import`, defined by
 [`src/shared/pack-schema.ts`](../src/shared/pack-schema.ts). Packs are authored as JSON, **never
 committed** (`.gitignore` blocks `*.pack.json` and `clues*.json`), and pushed over HTTPS behind
 `ADMIN_PIN`. Postgres is the only place a pack exists afterwards.
 
-Import is two-phase, which is what lets clue text be drafted before images exist:
+This is the reference. For the order to do things in — drafting, images, publishing, and fixing a
+clue after the fact — see [`authoring.md`](./authoring.md).
+
+Import is two-phase, which is what lets clue text be drafted before images exist. `?draft=1` selects
+the first; without it, a successful import also publishes:
 
 | Phase | Enforces | Fails when |
 |---|---|---|
@@ -85,12 +89,15 @@ from. Publish rejects the pack otherwise.
 ### Images
 
 Raw base64, no `data:` prefix, alongside the clue rather than inside the payload. The bytes land in
-`clue_media`, so there are no asset files to lose.
+`clue_media`, so there are no asset files to lose. `image/jpeg`, `image/png`, `image/webp` and
+`image/gif` are accepted; sizing and cropping advice is in
+[`authoring.md`](./authoring.md#3-images), along with the route that uploads one image at a time
+without re-importing the pack.
 
 ```jsonc
 {
   "tier": 3,
-  "answer": "Nidarosdomen",
+  "answer": "Bryggen i Bergen",
   "payload": { "kind": "image", "prompt": "Hvilken bygning?" },
   "image": { "mime": "image/jpeg", "base64": "/9j/4AAQSkZJRg…" }
 }

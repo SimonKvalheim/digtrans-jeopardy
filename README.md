@@ -47,6 +47,7 @@ Clue content is **not** in this repo — it is imported at runtime through `/adm
 ## Documentation
 
 - [`docs/PRD.md`](docs/PRD.md) — the full spec: rules, data model, architecture, decision log
+- [`docs/authoring.md`](docs/authoring.md) — writing a pack: clues, images, publishing, fixing a clue later
 - [`docs/pack-format.md`](docs/pack-format.md) — the clue pack JSON format and its validation rules
 - `docs/prd.html` — the same document rendered with mockups and diagrams
 
