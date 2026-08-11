@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { asc, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { cluePayloadSchema } from '../../shared/clue-kinds.ts'
+import { isStingName } from '../../shared/stings.ts'
 import {
   imageSchema,
   validateForPublish,
@@ -317,6 +318,88 @@ editorRouter.delete('/clues/:id/reveal', async (req, res) => {
     .update(schema.clueMedia)
     .set({ revealBytes: null, revealMime: null })
     .where(eq(schema.clueMedia.clueId, req.params.id))
+  res.json({ ok: true })
+})
+
+// ─── Generated sound effects (PRD §8.3) ──────────────────────────────────────
+
+const showMediaSchema = z.object({
+  mime: z.string().min(1).default('audio/mpeg'),
+  base64: z.string().min(1),
+  gain: z.number().positive().max(4).optional(),
+  prompt: z.string().optional(),
+  durationMs: z.number().int().positive().optional(),
+})
+
+/**
+ * Upload one sting, generated on a laptop by scripts/generate-sfx.mjs.
+ *
+ * The name is checked against STING_NAMES rather than accepted freely: a clip
+ * filed under a name nothing plays is silent with no error anywhere, which is
+ * the single worst failure this table can have.
+ */
+editorRouter.put('/show-media/:name', async (req, res) => {
+  if (!isStingName(req.params.name)) {
+    res.status(400).json({ error: `Ukjent lydnavn: ${req.params.name}` })
+    return
+  }
+
+  const parsed = showMediaSchema.safeParse(req.body)
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Ugyldig lyd — trenger mime og base64' })
+    return
+  }
+
+  const bytes = Buffer.from(parsed.data.base64, 'base64')
+  if (bytes.length === 0) {
+    res.status(400).json({ error: 'Lyden er tom' })
+    return
+  }
+
+  const row = {
+    bytes,
+    mime: parsed.data.mime,
+    gain: parsed.data.gain ?? 1,
+    prompt: parsed.data.prompt ?? null,
+    durationMs: parsed.data.durationMs ?? null,
+    generatedAt: new Date(),
+  }
+
+  await db()
+    .insert(schema.showMedia)
+    .values({ name: req.params.name, ...row })
+    .onConflictDoUpdate({ target: schema.showMedia.name, set: row })
+
+  res.json({ ok: true, name: req.params.name, bytes: bytes.length })
+})
+
+/** What is loaded, without the bytes — for confirming an upload landed. */
+editorRouter.get('/show-media', async (_req, res) => {
+  const rows = await db()
+    .select({
+      name: schema.showMedia.name,
+      mime: schema.showMedia.mime,
+      gain: schema.showMedia.gain,
+      prompt: schema.showMedia.prompt,
+      durationMs: schema.showMedia.durationMs,
+      generatedAt: schema.showMedia.generatedAt,
+      bytes: sql<number>`octet_length(${schema.showMedia.bytes})`,
+    })
+    .from(schema.showMedia)
+    .orderBy(asc(schema.showMedia.name))
+
+  res.json({ sounds: rows })
+})
+
+/**
+ * The escape hatch. Deleting a row reverts that one sound to the synthesised
+ * oscillator on the board's next unlock — no redeploy, mid-evening, which is
+ * the entire reason the fallback was kept rather than replaced.
+ */
+editorRouter.delete('/show-media/:name', async (req, res) => {
+  await db()
+    .delete(schema.showMedia)
+    .where(eq(schema.showMedia.name, req.params.name))
   res.json({ ok: true })
 })
 

@@ -3,6 +3,7 @@ import { Router, type Request, type Response } from 'express'
 import { eq } from 'drizzle-orm'
 import type { AnyPgColumn } from 'drizzle-orm/pg-core'
 import { db, schema } from '../db/index.ts'
+import { isStingName } from '../../shared/stings.ts'
 
 /**
  * Serves the bytes that arrived with a pack import (PRD §6.2).
@@ -75,6 +76,65 @@ const serveImage =
 
     res.send(row.bytes)
   }
+
+/**
+ * What sounds exist, so the board fetches exactly those (PRD §8.3).
+ *
+ * Declared before the /:gameClueId routes because "show" is a literal that must
+ * not be read as a uuid. Cheap enough to send uncached: the board asks once per
+ * unlock tap, and a stale manifest would mean re-rolling a sting at 20:00 and
+ * not hearing the difference.
+ */
+mediaRouter.get('/show', async (_req, res) => {
+  const rows = await db()
+    .select({
+      name: schema.showMedia.name,
+      gain: schema.showMedia.gain,
+      generatedAt: schema.showMedia.generatedAt,
+    })
+    .from(schema.showMedia)
+
+  res.set('Cache-Control', 'no-store')
+  res.json(rows.filter((row) => isStingName(row.name)))
+})
+
+/**
+ * One sound. Keyed by sting name rather than by any id, because these belong to
+ * the app rather than to a pack or a night — see the table comment in schema.
+ */
+mediaRouter.get('/show/:name', async (req, res) => {
+  const { name } = req.params
+
+  if (!isStingName(name)) {
+    res.status(404).json({ error: 'Ukjent lyd' })
+    return
+  }
+
+  const [row] = await db()
+    .select({ bytes: schema.showMedia.bytes, mime: schema.showMedia.mime })
+    .from(schema.showMedia)
+    .where(eq(schema.showMedia.name, name))
+
+  if (!row?.bytes) {
+    // Normal: the board asks only for what the manifest listed, but a row can
+    // be deleted between the two. The oscillator covers it.
+    res.status(404).json({ error: 'Ingen lydbytes for dette navnet' })
+    return
+  }
+
+  const etag = `"${createHash('sha1').update(row.bytes).digest('base64url')}"`
+
+  res.set('Cache-Control', CACHE_CONTROL)
+  res.set('ETag', etag)
+  res.type(row.mime)
+
+  if (req.get('if-none-match') === etag) {
+    res.status(304).end()
+    return
+  }
+
+  res.send(row.bytes)
+})
 
 mediaRouter.get(
   '/:gameClueId/image',

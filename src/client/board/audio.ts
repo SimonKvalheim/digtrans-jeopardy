@@ -1,19 +1,31 @@
 /**
- * Every sound the room hears, synthesised (PRD §8.3).
+ * Every sound the room hears (PRD §8.3).
  *
- * Oscillators, not files: a buzzer and a ding are a few lines of WebAudio, and
- * that keeps the repo free of audio assets, the network free of one more thing
- * to fetch at 21:30, and the licence file free of anything to argue about.
+ * Two layers, and the order matters. Generated clips from ElevenLabs are
+ * pre-loaded into the database and fetched once at the unlock tap; underneath
+ * every one of them sits the oscillator that used to be the whole story. If a
+ * clip is missing, still in flight, or fails to decode, the synthesised version
+ * plays instead — so the worst case is the game exactly as it sounded before
+ * any of this existed, rather than a silent room with nothing on screen to say
+ * why. Same posture as a clue with no generated speech (PRD §8.2).
+ *
+ * Nothing here calls a third party. ElevenLabs is invoked only by
+ * scripts/generate-sfx.mjs, on a laptop, long before anybody is playing.
  *
  * The board is the only audio device (PRD §8.1). Host and team phones stay
  * silent apart from vibration, so nothing in here is imported by those screens.
  */
+
+import { STING_NAMES, type StingName } from '@shared/stings.ts'
 
 type Ctx = AudioContext & { resume(): Promise<void> }
 
 let ctx: Ctx | null = null
 let master: GainNode | null = null
 let unlocked = false
+
+/** Decoded clips, by name. Empty until the fetch started at unlock finishes. */
+const buffers = new Map<StingName, { buffer: AudioBuffer; gain: number }>()
 
 /** Loud enough across a room, quiet enough not to duck the conversation. */
 const MASTER_GAIN = 0.32
@@ -46,11 +58,86 @@ export async function unlockAudio(): Promise<boolean> {
 
     await ctx.resume()
     unlocked = ctx.state === 'running'
+
+    // Deliberately not awaited. The tap's job is to resume the context and go
+    // fullscreen; making it wait on a network fetch would put a stall between
+    // the finger and the lobby, and every sound works without this resolving.
+    if (unlocked) void loadGeneratedStings()
+
     return unlocked
   } catch {
     // A board with no sound still runs the whole game. Never throw from here.
     return false
   }
+}
+
+/**
+ * Fetches whatever clips the database holds and decodes them once.
+ *
+ * Decoded up front rather than on first play: `decodeAudioData` on a cold mp3
+ * costs tens of milliseconds, and the first sound of the evening is usually a
+ * buzz — the one moment where late is worse than synthesised. After this, a
+ * sting is a buffer node and starts on the sample.
+ *
+ * Failure is silent and total by design: any clip that does not arrive simply
+ * keeps its oscillator, so a board on a dead venue network sounds like the one
+ * that shipped on Sunday.
+ */
+async function loadGeneratedStings(): Promise<void> {
+  if (!ctx) return
+
+  try {
+    const response = await fetch('/api/media/show')
+    if (!response.ok) return
+
+    const manifest: unknown = await response.json()
+    if (!Array.isArray(manifest)) return
+
+    const wanted = manifest.filter(
+      (entry): entry is { name: StingName; gain: number } =>
+        !!entry &&
+        typeof entry.name === 'string' &&
+        (STING_NAMES as readonly string[]).includes(entry.name),
+    )
+
+    // In parallel, and each one independently: a single 404 or a corrupt clip
+    // must not cost the other ten their upgrade.
+    await Promise.all(
+      wanted.map(async ({ name, gain }) => {
+        try {
+          const clip = await fetch(`/api/media/show/${name}`)
+          if (!clip.ok) return
+          const bytes = await clip.arrayBuffer()
+          const buffer = await ctx!.decodeAudioData(bytes)
+          buffers.set(name, {
+            buffer,
+            gain: typeof gain === 'number' && gain > 0 ? gain : 1,
+          })
+        } catch {
+          // Keeps the oscillator. Nothing to report and nobody to report it to.
+        }
+      }),
+    )
+  } catch {
+    // Offline, or no database. Both are survivable and already handled.
+  }
+}
+
+/** Plays a decoded clip. Returns false if there is nothing loaded for it. */
+function playBuffer(name: StingName): boolean {
+  const entry = buffers.get(name)
+  if (!entry || !ctx || !master) return false
+
+  const source = ctx.createBufferSource()
+  const trim = ctx.createGain()
+
+  source.buffer = entry.buffer
+  trim.gain.value = entry.gain
+
+  source.connect(trim)
+  trim.connect(master)
+  source.start()
+  return true
 }
 
 interface ToneOptions {
@@ -94,8 +181,16 @@ function tone({
   osc.stop(start + dur + 0.02)
 }
 
-/** Note names kept out of it: these are the frequencies that sounded right. */
-const STINGS: Record<string, () => void> = {
+/**
+ * The synthesised layer, and the reason a missing clip is not a problem.
+ *
+ * Typed against StingName rather than string so that adding a name to the
+ * shared list without giving it a fallback is a compile error — a sound with no
+ * oscillator behind it would be silent on any board that failed to fetch.
+ *
+ * Note names kept out of it: these are the frequencies that sounded right.
+ */
+const STINGS: Record<StingName, () => void> = {
   /** A tile opening: short rising blip. */
   tileOpen: () => {
     tone({ freq: 440, slideTo: 880, dur: 0.13, type: 'triangle', gain: 0.5 })
@@ -173,15 +268,20 @@ const STINGS: Record<string, () => void> = {
   },
 }
 
-export type StingName = keyof typeof STINGS
+export type { StingName }
 
 /**
  * Fire and forget. Silent before the unlock tap, which is correct rather than
  * unfortunate: the alternative is a board that throws on its first render.
+ *
+ * The generated clip wins when there is one; otherwise the oscillator does the
+ * job it has always done. Both paths are inside the same try, because a sound
+ * effect that throws must never take a tile-open down with it.
  */
 export function sting(name: StingName) {
   if (!unlocked || !ctx) return
   try {
+    if (playBuffer(name)) return
     STINGS[name]?.()
   } catch {
     // A dropped sound effect is never worth an error boundary mid-game.

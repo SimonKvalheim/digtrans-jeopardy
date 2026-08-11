@@ -19,7 +19,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "design:build": "node scripts/build-design.mjs"
+    "design:build": "node scripts/build-design.mjs",
+    "sfx": "node --import tsx scripts/generate-sfx.mjs"
   },
   "dependencies": {
     "drizzle-orm": "^0.44.6",

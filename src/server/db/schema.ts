@@ -6,6 +6,7 @@ import {
   jsonb,
   pgEnum,
   pgTable,
+  real,
   text,
   timestamp,
   unique,
@@ -122,6 +123,37 @@ export const clueMedia = pgTable('clue_media', {
   ttsBytes: bytea(),
   ttsVoiceId: text(),
   ttsBuiltAt: timestamp({ withTimezone: true }),
+})
+
+// ─── SHOW: the same every night, belonging to neither half ───────────────────
+
+/**
+ * Generated sound effects, keyed by the sting they replace (PRD §8.3).
+ *
+ * Deliberately not hung off packs or games: unlike clue_media these are app
+ * furniture, identical every evening, and they must survive a pack re-import.
+ *
+ * Every row is optional. The board falls back to the synthesised oscillator for
+ * any name it finds no bytes for, so an empty table is not a degraded state —
+ * it is exactly the game that shipped before any of this existed. That is also
+ * the rollback: deleting one row reverts one sound, mid-evening, no redeploy.
+ */
+export const showMedia = pgTable('show_media', {
+  /** One of STING_NAMES. Validated at the route, not by the database. */
+  name: text().primaryKey(),
+  bytes: bytea().notNull(),
+  mime: text().notNull().default('audio/mpeg'),
+  /**
+   * Playback trim, applied on top of the board's master gain. Eleven clips from
+   * eleven prompts do not arrive at one loudness; the generation script
+   * normalises what it can, and this is the knob for what is left — tunable
+   * against the actual TV without a redeploy.
+   */
+  gain: real().notNull().default(1),
+  /** What produced it, so a re-roll starts from the prompt that was close. */
+  prompt: text(),
+  durationMs: integer(),
+  generatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
 })
 
 // ─── PLAY: everything that mutates tonight ───────────────────────────────────
