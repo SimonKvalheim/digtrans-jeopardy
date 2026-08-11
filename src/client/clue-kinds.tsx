@@ -57,18 +57,30 @@ export function isRevealing(
 }
 
 function TextBoard({ clue }: { clue: BoardClue }) {
-  return <FitText className="clue__prompt" text={clue.prompt} max={92} min={38} />
+  // Once the answer is up the question has done its job. It stays on screen for
+  // whoever walked in halfway through, but it stops being the thing you read.
+  const out = isRevealing(clue)
+  return (
+    <FitText
+      className="clue__prompt"
+      text={clue.prompt}
+      max={out ? 46 : 92}
+      min={out ? 24 : 38}
+    />
+  )
 }
 
 function EmojiBoard({ clue }: { clue: BoardClue }) {
   // The whole joke is that they are enormous — hence a floor that is still
-  // larger than an ordinary prompt's ceiling.
+  // larger than an ordinary prompt's ceiling. Halved once the answer is out:
+  // still the biggest thing in the top band, no longer the biggest on the TV.
+  const out = isRevealing(clue)
   return (
     <FitText
       className="clue__prompt clue__prompt--emoji"
       text={clue.prompt}
-      max={240}
-      min={96}
+      max={out ? 120 : 240}
+      min={out ? 64 : 96}
       step={12}
     />
   )
@@ -138,12 +150,18 @@ function ImageBoard({ clue }: { clue: BoardClue }) {
 
 /** The TV shows the note and the prompt; the music comes off the host phone. */
 function AudioHostBoard({ clue }: { clue: BoardClue }) {
+  const out = isRevealing(clue)
   return (
     <div className="clue__audio">
       <span className="clue__audio-note" aria-hidden="true">
         ♪
       </span>
-      <FitText className="clue__prompt" text={clue.prompt} max={80} min={36} />
+      <FitText
+        className="clue__prompt"
+        text={clue.prompt}
+        max={out ? 40 : 80}
+        min={out ? 24 : 36}
+      />
     </div>
   )
 }
