@@ -148,7 +148,7 @@ export function BoardScreen() {
   const inLobby = state.phase === 'lobby' && !state.activeClue
 
   return (
-    <Stage>
+    <Stage scene={state.screen !== 'plain'}>
       {/* The compact gate is a strip along the bottom edge, so the board has to
           give up the same 64px rather than have it laid over the score strip —
           measured at a 32px overlap that clipped the numerals. */}

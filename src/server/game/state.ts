@@ -19,6 +19,7 @@ const SPENT_PHASES = new Set(['revealed', 'done'])
  * through Postgres and over the wire on every tick.
  */
 const HAS_IMAGE = sql<boolean>`${schema.clueMedia.imageBytes} is not null`
+const HAS_REVEAL = sql<boolean>`${schema.clueMedia.revealBytes} is not null`
 
 /**
  * Assembles everything the TV draws. Deliberately excludes clue prompts and
@@ -76,6 +77,7 @@ export async function buildBoardState(code: string): Promise<BoardState | null> 
           gameClueId: schema.gameClues.id,
           phase: schema.gameClues.phase,
           hasImage: HAS_IMAGE,
+          hasRevealImage: HAS_REVEAL,
         })
         .from(schema.categories)
         .innerJoin(
@@ -117,6 +119,7 @@ export async function buildBoardState(code: string): Promise<BoardState | null> 
           sips: sipsForTier(row.tier as Tier, drinkScale),
           spent: SPENT_PHASES.has(row.phase),
           hasImage: Boolean(row.hasImage),
+          hasRevealImage: Boolean(row.hasRevealImage),
         })
       }
 
@@ -133,6 +136,9 @@ export async function buildBoardState(code: string): Promise<BoardState | null> 
     gameId: game.id,
     code: game.code,
     phase: game.phase,
+    // Anything that is not an explicit 'plain' is the full set, so a row
+    // written before this column existed still opens on a dressed stage.
+    screen: game.screen === 'plain' ? 'plain' : 'studio',
     round,
     teams,
     turnTeamId: game.turnTeamId,
@@ -167,6 +173,7 @@ async function buildActiveClue(
       categoryName: schema.categories.name,
       valueStep: schema.rounds.valueStep,
       hasImage: HAS_IMAGE,
+      hasRevealImage: HAS_REVEAL,
     })
     .from(schema.gameClues)
     .innerJoin(schema.clues, eq(schema.clues.id, schema.gameClues.clueId))
@@ -194,6 +201,7 @@ async function buildActiveClue(
     kind: row.kind,
     prompt: row.payload.prompt,
     hasImage: Boolean(row.hasImage),
+    hasRevealImage: Boolean(row.hasRevealImage),
     sips: sipsForTier(row.tier as Tier, drinkScale),
     stealWinner: await buildStealWinner(row.id, row.stealTeamId),
   }

@@ -114,6 +114,32 @@ No `data:` prefix. Base64 inflates by a third, and the import body limit is
 64 MB — enough for a couple of dozen sensibly sized photos, not for raw camera
 files.
 
+**Route C — drop files in a folder.** For a batch, this is the least typing:
+
+```bash
+cp ~/Bilder/utsnitt.jpg packs/media/kjendisoyne-1.jpg
+node scripts/embed-images.mjs
+```
+
+Files are matched by `<category>-<tier>.<ext>`, using the `fromLabel` for half
+of a paired category — so a painting in the paired *Musikk*/*Kunstverk*
+category is `kunstverk-3.jpg`, not `musikk-3.jpg`. Run the script with no files
+present and it prints every name it is waiting for. `packs/` is gitignored, so
+the photos stay out of the repo.
+
+### The whole picture on the reveal
+
+A cropped question is better with its uncropped answer. Add a second file with
+`-reveal` before the extension, or a `revealImage` sibling of `image`:
+
+```bash
+cp ~/Bilder/hele-bildet.jpg packs/media/kjendisoyne-1-reveal.jpg
+```
+
+The board swaps to it when the answer comes out and never before, so it is safe
+to ship alongside the crop. Entirely optional — a clue without one reveals
+exactly as it always did.
+
 ### If an image can't be found in time
 
 Change the clue's `kind` from `image` to `text` and rewrite the prompt as a
@@ -204,6 +230,8 @@ All admin routes take `x-pin: $ADMIN_PIN`.
 | `PATCH /api/admin/clues/:id` | Edit one clue |
 | `PUT /api/admin/clues/:id/image` | Attach or replace an image (`{mime, base64}`) |
 | `DELETE /api/admin/clues/:id/image` | Remove an image |
+| `PUT /api/admin/clues/:id/reveal` | Attach or replace the reveal picture (`{mime, base64}`) |
+| `DELETE /api/admin/clues/:id/reveal` | Remove the reveal picture |
 | `GET /api/admin/games` | Every game, and which pack it locks |
 | `DELETE /api/admin/games/:code` | Delete a game (body: `{"confirm":"CODE"}`) |
 

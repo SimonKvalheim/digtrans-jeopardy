@@ -16,7 +16,7 @@ import {
   wagerLimit,
 } from '../game/loop.ts'
 import { buildBoardState } from '../game/state.ts'
-import { roundProgress, setLobby, setRound } from '../game/rounds.ts'
+import { roundProgress, setLobby, setRound, setScreen } from '../game/rounds.ts'
 import {
   finalState,
   finishFinal,
@@ -267,6 +267,19 @@ hostRouter.get('/games/:code/rounds', async (req, res) => {
 hostRouter.post('/games/:code/lobby', (req, res) =>
   wrap(() => setLobby(req.params.code, Boolean(req.body?.open)))(req, res),
 )
+
+const screenSchema = z.object({ screen: z.enum(['studio', 'plain']) })
+
+/** Studio set or bare board on the TV. Legal in every phase — it is a
+    presentation choice, not a move in the game. */
+hostRouter.post('/games/:code/screen', (req, res) => {
+  const parsed = screenSchema.safeParse(req.body)
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Ugyldig visning' })
+    return
+  }
+  return wrap(() => setScreen(req.params.code, parsed.data.screen))(req, res)
+})
 
 /** No body advances to the next round; a roundId jumps to that one. */
 hostRouter.post('/games/:code/round', (req, res) =>

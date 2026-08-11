@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react'
+import { StudioScene } from './board/StudioScene.tsx'
 
 const STAGE_W = 1920
 const STAGE_H = 1080
@@ -8,8 +9,20 @@ const STAGE_H = 1080
  * so board code can be written in absolute pixels and never think about
  * breakpoints. Rescales on resize and on orientation change, which also covers
  * the "someone unplugs and replugs the HDMI" case.
+ *
+ * The studio set is drawn here rather than inside the board: it is a room the
+ * board sits in, it never changes between phases, and every phase (grid, clue,
+ * final, lobby) should keep the same walls behind it. `scene` only cross-fades
+ * it — the board itself stays mounted, so switching views mid-clue never
+ * restarts a countdown.
  */
-export function Stage({ children }: { children: ReactNode }) {
+export function Stage({
+  children,
+  scene = true,
+}: {
+  children: ReactNode
+  scene?: boolean
+}) {
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -36,7 +49,11 @@ export function Stage({ children }: { children: ReactNode }) {
 
   return (
     <div className="stage-viewport">
-      <div className="stage" ref={ref}>
+      <div
+        className={`stage ${scene ? 'stage--scene' : 'stage--plain'}`}
+        ref={ref}
+      >
+        <StudioScene />
         {children}
       </div>
     </div>

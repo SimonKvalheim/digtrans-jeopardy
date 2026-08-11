@@ -1,6 +1,6 @@
 import { useEffect, useRef, type CSSProperties } from 'react'
 import type { BoardState } from '@shared/board-state.ts'
-import { clueImageUrl } from '../clue-kinds.tsx'
+import { clueImageUrl, clueRevealImageUrl } from '../clue-kinds.tsx'
 import { rememberTileRects, SETTLE_MS, whenSettled } from './tile-rects.ts'
 
 /**
@@ -12,10 +12,16 @@ export function BoardGrid({ round }: { round: NonNullable<BoardState['round']> }
   const columns = round.categories.length
   const rows = rowsOf(round.categories)
 
+  // Both pictures are warmed here. The reveal is the more urgent of the two:
+  // it appears seconds after an answer lands, with the whole room already
+  // looking at the screen and no grid phase left to download it in.
   const imageTiles = round.categories
     .flatMap((category) => category.tiles)
-    .filter((tile) => tile.hasImage && !tile.spent)
-    .map((tile) => tile.id)
+    .filter((tile) => !tile.spent)
+    .flatMap((tile) => [
+      ...(tile.hasImage ? [clueImageUrl(tile.id)] : []),
+      ...(tile.hasRevealImage ? [clueRevealImageUrl(tile.id)] : []),
+    ])
 
   // Warm every picture in the round while the grid is on screen. A tile opening
   // is the one moment in the evening with an audience and no patience, and a
@@ -55,8 +61,11 @@ export function BoardGrid({ round }: { round: NonNullable<BoardState['round']> }
       className="board__grid"
       style={{
         gridTemplateColumns: `repeat(${columns}, 1fr)`,
-        // A header row plus one row per price actually present.
-        gridTemplateRows: `132px repeat(${rows.length}, 1fr)`,
+        // A header row plus one row per price actually present. The header
+        // height is a variable so the studio view can buy height back from it
+        // — inline styles win over a stylesheet, so it cannot be overridden
+        // from CSS unless it is expressed as one.
+        gridTemplateRows: `var(--jp-head-row, 132px) repeat(${rows.length}, 1fr)`,
       }}
     >
       {round.categories.map((category, columnIndex) => (
@@ -124,11 +133,11 @@ export function BoardGrid({ round }: { round: NonNullable<BoardState['round']> }
  */
 const warmedImages = new Map<string, HTMLImageElement>()
 
-function warmImage(gameClueId: string) {
-  if (warmedImages.has(gameClueId)) return
+function warmImage(url: string) {
+  if (warmedImages.has(url)) return
   const img = new Image()
-  img.src = clueImageUrl(gameClueId)
-  warmedImages.set(gameClueId, img)
+  img.src = url
+  warmedImages.set(url, img)
 }
 
 /**

@@ -39,6 +39,11 @@ export const clueSchema = z.strictObject({
   fromLabel: z.string().max(60).optional(),
   payload: cluePayloadSchema,
   image: imageSchema.optional(),
+  /**
+   * Shown after the answer is out, on an image clue whose question is a crop.
+   * Always optional — a clue without one reveals exactly as it does today.
+   */
+  revealImage: imageSchema.optional(),
 })
 
 export const categorySchema = z.strictObject({
@@ -156,6 +161,14 @@ export function validateForPublish(pack: PackInput): PackProblem[] {
           problems.push({
             path: clueAt,
             message: `bilde er lagt ved en ${clue.payload.kind}-clue`,
+          })
+        }
+        // A reveal picture with nothing to reveal from would simply never be
+        // reached, so it is a mistake worth naming rather than dead weight.
+        if (clue.payload.kind !== 'image' && clue.revealImage) {
+          problems.push({
+            path: clueAt,
+            message: `fasitbilde er lagt ved en ${clue.payload.kind}-clue`,
           })
         }
         if (category.pairedWith && !clue.fromLabel) {

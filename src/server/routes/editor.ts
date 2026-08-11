@@ -249,10 +249,73 @@ editorRouter.get('/clues/:id/image', async (req, res) => {
 })
 
 editorRouter.delete('/clues/:id/image', async (req, res) => {
-  // Only the image is cleared; any generated speech on the same row survives.
+  // Only the image is cleared; any generated speech on the same row survives,
+  // and so does the reveal picture.
   await db()
     .update(schema.clueMedia)
     .set({ imageBytes: null, imageMime: null })
+    .where(eq(schema.clueMedia.clueId, req.params.id))
+  res.json({ ok: true })
+})
+
+/** The same three operations for the reveal picture, on the same row. */
+editorRouter.put('/clues/:id/reveal', async (req, res) => {
+  const parsed = imageSchema.safeParse(req.body)
+  if (!parsed.success) {
+    res.status(400).json({ error: 'Ugyldig bilde — trenger mime og base64' })
+    return
+  }
+
+  const [clue] = await db()
+    .select({ id: schema.clues.id })
+    .from(schema.clues)
+    .where(eq(schema.clues.id, req.params.id))
+
+  if (!clue) {
+    res.status(404).json({ error: 'Fant ikke klueen' })
+    return
+  }
+
+  const bytes = Buffer.from(parsed.data.base64, 'base64')
+  if (bytes.length === 0) {
+    res.status(400).json({ error: 'Bildet er tomt' })
+    return
+  }
+
+  await db()
+    .insert(schema.clueMedia)
+    .values({ clueId: clue.id, revealBytes: bytes, revealMime: parsed.data.mime })
+    .onConflictDoUpdate({
+      target: schema.clueMedia.clueId,
+      set: { revealBytes: bytes, revealMime: parsed.data.mime },
+    })
+
+  res.json({ ok: true, bytes: bytes.length, mime: parsed.data.mime })
+})
+
+editorRouter.get('/clues/:id/reveal', async (req, res) => {
+  const [row] = await db()
+    .select({
+      bytes: schema.clueMedia.revealBytes,
+      mime: schema.clueMedia.revealMime,
+    })
+    .from(schema.clueMedia)
+    .where(eq(schema.clueMedia.clueId, req.params.id))
+
+  if (!row?.bytes) {
+    res.status(404).json({ error: 'Ingen fasitbilde for denne klueen' })
+    return
+  }
+
+  res.set('Cache-Control', 'no-store')
+  res.type(row.mime ?? 'application/octet-stream')
+  res.send(row.bytes)
+})
+
+editorRouter.delete('/clues/:id/reveal', async (req, res) => {
+  await db()
+    .update(schema.clueMedia)
+    .set({ revealBytes: null, revealMime: null })
     .where(eq(schema.clueMedia.clueId, req.params.id))
   res.json({ ok: true })
 })

@@ -110,6 +110,14 @@ export const clueMedia = pgTable('clue_media', {
     .references(() => clues.id, { onDelete: 'cascade' }),
   imageBytes: bytea(),
   imageMime: text(),
+  /**
+   * The picture shown once the answer is out — the whole face behind the eyes,
+   * the building behind the crop. Separate bytes rather than a second clue,
+   * because it is the same tile and must never reach the board before the
+   * reveal. Optional everywhere: without it the reveal is unchanged.
+   */
+  revealBytes: bytea(),
+  revealMime: text(),
   /** Pre-generated at publish; never synthesised live. See PRD §8.2. */
   ttsBytes: bytea(),
   ttsVoiceId: text(),
@@ -126,6 +134,12 @@ export const games = pgTable('games', {
   /** Room code shown on the TV, e.g. "NTNU". */
   code: text().notNull().unique(),
   phase: text().notNull().default('lobby'),
+  /**
+   * 'studio' | 'plain'. Which view the TV is in. Lives in game state rather
+   * than the browser because the host drives a TV across the room, and the
+   * board reloads on reconnect.
+   */
+  screen: text().notNull().default('studio'),
   activeRoundId: uuid(),
   /** → game_clues.id, not clues.id. */
   activeClueId: uuid(),

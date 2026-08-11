@@ -61,6 +61,26 @@ export async function setLobby(code: string, open: boolean) {
 }
 
 /**
+ * Switches the TV between the dressed studio and the bare board.
+ *
+ * Unlike the lobby this is legal in every phase, including the final: it is a
+ * presentation choice, not a move in the game. The studio frame costs about a
+ * fifth of the grid area, so the host drops to the bare board whenever the
+ * numbers need to be readable from the back of the room.
+ */
+export async function setScreen(code: string, screen: 'studio' | 'plain') {
+  const game = await loadGame(code)
+
+  await db()
+    .update(schema.games)
+    .set({ screen })
+    .where(eq(schema.games.id, game.id))
+
+  notifyChanged(game.id)
+  return { screen }
+}
+
+/**
  * Every round in the pack with tonight's progress against it, so the console
  * can say "runde 1 · 28 av 30 spilt" rather than making the host count tiles.
  */

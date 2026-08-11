@@ -25,6 +25,12 @@ export interface BoardTile {
    * heading ("Zoomet inn") announces anyway.
    */
   hasImage: boolean
+  /**
+   * Whether this tile also has a reveal picture. Warmed alongside the question
+   * image: the reveal lands seconds after the tile opens, which is far too late
+   * to start a download in front of the room.
+   */
+  hasRevealImage: boolean
 }
 
 export interface BoardCategory {
@@ -46,6 +52,8 @@ export interface BoardState {
   gameId: string
   code: string
   phase: string
+  /** Which big-screen view the host has chosen for the TV. */
+  screen: 'studio' | 'plain'
   round: {
     id: string
     kind: 'jeopardy' | 'double' | 'final'
@@ -82,6 +90,12 @@ export interface BoardState {
     prompt: string
     /** Whether this clue has bytes at /api/media/:id/image. */
     hasImage: boolean
+    /**
+     * Whether there is a whole picture at /api/media/:id/reveal. Safe to send
+     * before the reveal: it says a fuller picture exists, which the crop
+     * already implies, and never what it is of.
+     */
+    hasRevealImage: boolean
     /** Sips to attempt this tier, from the pack's drinkScale. */
     sips: number
     /**

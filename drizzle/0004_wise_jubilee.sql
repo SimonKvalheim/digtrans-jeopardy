@@ -1,0 +1,1 @@
+ALTER TABLE "games" ADD COLUMN "screen" text DEFAULT 'studio' NOT NULL;

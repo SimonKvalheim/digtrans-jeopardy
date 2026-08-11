@@ -63,7 +63,7 @@ const grid = () => {
     }
   }
   return `
-<div class="board__grid" style="grid-template-columns: repeat(6, 1fr); grid-template-rows: 132px repeat(5, 1fr);">
+<div class="board__grid" style="grid-template-columns: repeat(6, 1fr); grid-template-rows: var(--jp-head-row, 132px) repeat(5, 1fr);">
   ${CATEGORIES.map((c) => `<div class="board__category"><span>${c}</span></div>`).join('')}
   ${cells.join('')}
 </div>`
@@ -616,7 +616,7 @@ const CARDS = [
         </div>
       </label>
       <label class="field"><span>Spørsmål</span><textarea rows="3">Hvilket byggverk er dette?</textarea></label>
-      <label class="field"><span>Fasit</span><input type="text" value="Studentersamfundet"></label>
+      <label class="field"><span>Fasit</span><input type="text" value="Bryggen i Bergen"></label>
       <div class="field"><span>Bilde</span>
         <p class="admin__warn">Mangler bilde — blokkerer publisering.</p>
       </div>

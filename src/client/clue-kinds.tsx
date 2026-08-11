@@ -29,6 +29,20 @@ export function clueImageUrl(gameClueId: string): string {
   return `/api/media/${gameClueId}/image`
 }
 
+/** The whole picture behind the crop, fetched only once the answer is out. */
+export function clueRevealImageUrl(gameClueId: string): string {
+  return `/api/media/${gameClueId}/reveal`
+}
+
+/**
+ * Phases in which the answer is already public: `revealed` is nobody getting
+ * it, `done` is somebody getting it. The tile stays on screen through both
+ * until the host closes it, and the room wants the full picture in either.
+ */
+export function isAnswerOut(phase: string): boolean {
+  return phase === 'revealed' || phase === 'done'
+}
+
 function TextBoard({ clue }: { clue: BoardClue }) {
   return <FitText className="clue__prompt" text={clue.prompt} max={92} min={38} />
 }
@@ -50,7 +64,7 @@ function EmojiBoard({ clue }: { clue: BoardClue }) {
 /**
  * Full-bleed (PRD §6.4), but the photo itself is never cropped.
  *
- * These clues are *already* crops — a tight detail of Nidarosdomen, an eye —
+ * These clues are *already* crops — a tight detail of a building, an eye —
  * so letting `cover` trim the edges to fill a 16:9 stage would throw away the
  * part that makes the question answerable. The photo is therefore contained,
  * and a blurred, scaled copy of itself fills whatever is left. It reads as
@@ -58,12 +72,19 @@ function EmojiBoard({ clue }: { clue: BoardClue }) {
  */
 function ImageBoard({ clue }: { clue: BoardClue }) {
   const [failed, setFailed] = useState(false)
-  const src = clueImageUrl(clue.id)
+  const [revealFailed, setRevealFailed] = useState(false)
+
+  // Once the answer is out, the crop has done its job and the room wants the
+  // whole picture. A missing or broken reveal falls back to the crop rather
+  // than to nothing — the question image is always the safe thing to show.
+  const revealing =
+    isAnswerOut(clue.phase) && clue.hasRevealImage && !revealFailed
+  const src = revealing ? clueRevealImageUrl(clue.id) : clueImageUrl(clue.id)
 
   // Missing bytes is a normal authoring state, and the host still has to be
   // able to run the clue: fall back to the prompt, and say why it is bare so
   // nobody stands there waiting for a picture that is never coming.
-  if (!clue.hasImage || failed) {
+  if ((!clue.hasImage && !revealing) || (failed && !revealing)) {
     return (
       <div className="clue__image clue__image--missing">
         <FitText className="clue__prompt" text={clue.prompt} max={92} min={38} />
@@ -73,17 +94,21 @@ function ImageBoard({ clue }: { clue: BoardClue }) {
   }
 
   return (
-    <div className="clue__image">
+    <div className={`clue__image${revealing ? ' clue__image--reveal' : ''}`}>
       <div
         className="clue__image-backdrop"
         style={{ backgroundImage: `url("${src}")` }}
         aria-hidden="true"
       />
       <img
+        // Keyed so swapping to the reveal genuinely replaces the element and
+        // replays the fade, rather than mutating src on the same <img> and
+        // leaving the old photo up until the new bytes decode.
+        key={revealing ? 'reveal' : 'clue'}
         className="clue__image-photo"
         src={src}
         alt=""
-        onError={() => setFailed(true)}
+        onError={() => (revealing ? setRevealFailed(true) : setFailed(true))}
       />
       {/* The span is load-bearing: it is what lets the plate behind the text
           hug the words instead of blanking a full-width band of photograph. */}

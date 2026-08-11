@@ -29,6 +29,20 @@
       "when": 1786300666344,
       "tag": "0003_tranquil_sugar_man",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1786447800159,
+      "tag": "0004_wise_jubilee",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1786450168341,
+      "tag": "0005_fearless_joystick",
+      "breakpoints": true
     }
   ]
 }

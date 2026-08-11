@@ -87,6 +87,7 @@ adminRouter.post('/import', async (req, res) => {
       const packId = inserted!.id
       let clueCount = 0
       let imageCount = 0
+      let revealCount = 0
 
       for (const [roundIndex, round] of pack.rounds.entries()) {
         const [insertedRound] = await tx
@@ -127,13 +128,22 @@ adminRouter.post('/import', async (req, res) => {
 
             clueCount += 1
 
-            if (clue.image) {
+            // One row carries both pictures, so a clue with only a reveal
+            // still gets stored rather than falling through the gap.
+            if (clue.image || clue.revealImage) {
               await tx.insert(schema.clueMedia).values({
                 clueId: insertedClue!.id,
-                imageBytes: Buffer.from(clue.image.base64, 'base64'),
-                imageMime: clue.image.mime,
+                imageBytes: clue.image
+                  ? Buffer.from(clue.image.base64, 'base64')
+                  : null,
+                imageMime: clue.image?.mime ?? null,
+                revealBytes: clue.revealImage
+                  ? Buffer.from(clue.revealImage.base64, 'base64')
+                  : null,
+                revealMime: clue.revealImage?.mime ?? null,
               })
-              imageCount += 1
+              if (clue.image) imageCount += 1
+              if (clue.revealImage) revealCount += 1
             }
           }
         }
@@ -146,6 +156,7 @@ adminRouter.post('/import', async (req, res) => {
         rounds: pack.rounds.length,
         clues: clueCount,
         images: imageCount,
+        revealImages: revealCount,
       }
     })
 

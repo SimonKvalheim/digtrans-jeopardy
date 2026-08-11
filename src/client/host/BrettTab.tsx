@@ -90,6 +90,22 @@ export function BrettTab({
     }
   }
 
+  const setScreen = async (screen: 'studio' | 'plain') => {
+    setBusy(true)
+    setError(null)
+    try {
+      await hostFetch(`/games/${code}/screen`, {
+        method: 'POST',
+        body: { screen },
+      })
+      await onChanged()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Ukjent feil')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const goTo = async (roundId?: string) => {
     setBusy(true)
     setError(null)
@@ -109,6 +125,71 @@ export function BrettTab({
 
   return (
     <div className="brett">
+      {/* Leaving the lobby is the one action with a clear moment attached to it
+          — the room is waiting and the host is looking for the button. It used
+          to be a plain toggle below the tile grid and the round chips, which is
+          a lot of scrolling to find the thing that starts the evening. */}
+      {board.phase === 'lobby' ? (
+        <section className="brett__start">
+          <div className="brett__start-head">
+            <h3>Lobbyen er oppe</h3>
+            <span className="brett__start-count">
+              {board.teams.length} lag inne
+            </span>
+          </div>
+
+          <button
+            type="button"
+            className="btn btn--primary brett__start-btn"
+            disabled={busy}
+            onClick={() => void setLobbyOpen(false)}
+          >
+            Start spillet — vis brettet
+          </button>
+
+          <p className="brett__start-note">
+            {board.teams.length === 0
+              ? 'Ingen lag har scannet ennå. Koden og QR-en står på TV-en.'
+              : turnTeam
+                ? `${turnTeam.name} starter. Lobbyen kan hentes tilbake når som helst.`
+                : 'Ingen tur satt ennå — velg hvem som begynner i Poeng-fanen.'}
+          </p>
+        </section>
+      ) : null}
+
+      {/* The studio set frames the board like a real set but eats about a fifth
+          of the grid; this is how the host gets the big numerals back when
+          someone at the back of the room cannot read a value. */}
+      <section className="brett__screen">
+        <div className="brett__screen-head">
+          <h3>Storskjerm</h3>
+          <span className="brett__screen-now">
+            Nå: {board.screen === 'plain' ? 'Bare brett' : 'Studio'}
+          </span>
+        </div>
+        <div className="brett__screen-options">
+          <button
+            type="button"
+            className={`brett__screen-btn${board.screen !== 'plain' ? ' brett__screen-btn--active' : ''}`}
+            disabled={busy}
+            onClick={() => void setScreen('studio')}
+          >
+            Studio<span>Hele settet</span>
+          </button>
+          <button
+            type="button"
+            className={`brett__screen-btn${board.screen === 'plain' ? ' brett__screen-btn--active' : ''}`}
+            disabled={busy}
+            onClick={() => void setScreen('plain')}
+          >
+            Bare brett<span>Størst tall</span>
+          </button>
+        </div>
+        <p className="brett__screen-note">
+          Studio til intro og pauser, bare brett når det står om poeng bakerst i rommet.
+        </p>
+      </section>
+
       <p className="brett__turn">
         {turnTeam ? (
           <>
@@ -162,15 +243,18 @@ export function BrettTab({
       <div className="brett__rounds">
         {/* The lobby is a screen the host raises and lowers, not a stage that
             is passed through once — a team turning up late still needs
-            something to scan. */}
-        <button
-          type="button"
-          className="btn"
-          disabled={busy}
-          onClick={() => void setLobbyOpen(board.phase !== 'lobby')}
-        >
-          {board.phase === 'lobby' ? 'Skjul lobby — vis brettet' : 'Vis lobby (kode + QR)'}
-        </button>
+            something to scan. Going the other way is the panel at the top, so
+            this only ever offers the direction that one does not. */}
+        {board.phase === 'lobby' ? null : (
+          <button
+            type="button"
+            className="btn"
+            disabled={busy}
+            onClick={() => void setLobbyOpen(true)}
+          >
+            Vis lobby (kode + QR)
+          </button>
+        )}
 
         <div className="brett__rounds-chips">
           {playable.map((round) => (

@@ -1774,7 +1774,7 @@ input[type='password']:focus {
   text-decoration: none;
 }
 
-/* The host has to see the picture too — a near-miss on "Gamle Bybro" cannot be
+/* The host has to see the picture too — a near-miss on a landmark cannot be
    judged off the answer key alone. Capped in height so it never pushes the two
    buttons that get pressed two hundred times below the fold. */
 .spor__thumb {
@@ -1821,3 +1821,507 @@ input[type='password']:focus {
 .spor__steal-title { font-size: 16px; color: var(--gold-bright); }
 
 .spor__steal-teams { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Studio set (StudioScene.tsx) + the host-controlled Studio / board-only view.
+   Geometry is in absolute px because the stage is always exactly 1920×1080.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.studio {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  transition: opacity .55s ease;
+}
+
+.stage--plain .studio { opacity: 0; }
+
+/* The stage floor colour differs between the two views: with the set on, the
+   room is darker so the practicals read as light sources. */
+.stage--scene {
+  background: radial-gradient(120% 90% at 50% 42%, #10175f 0%, #070b34 46%, #02030f 100%);
+}
+
+/* ── Ceiling ─────────────────────────────────────────────────────────────── */
+.studio__ceiling {
+  position: absolute;
+  left: -14%;
+  right: -14%;
+  top: 0;
+  height: 236px;
+  overflow: hidden;
+  perspective: 900px;
+  perspective-origin: 50% 130%;
+}
+
+.studio__ceiling-plane {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 620px;
+  transform: rotateX(74deg);
+  transform-origin: 50% 100%;
+  background: repeating-linear-gradient(180deg, #2a1a06 0 10px, #ffbf55 10px 26px, #6b4210 26px 34px, #ffe3a8 34px 44px, #23150a 44px 62px);
+  box-shadow: inset 0 -40px 90px rgba(0, 0, 0, .55);
+}
+
+.studio__ceiling-fade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, #05071c 0%, rgba(5, 7, 28, .75) 24%, rgba(5, 7, 28, 0) 62%);
+}
+
+.studio__ceiling-lip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 90px;
+  background: linear-gradient(180deg, rgba(255, 180, 60, 0), rgba(255, 180, 60, .35));
+}
+
+.studio__led {
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  top: 224px;
+  height: 34px;
+  border-radius: 0 0 50% 50% / 0 0 100% 100%;
+  background: repeating-linear-gradient(90deg, #6fe0ff 0 30px, #062f4e 30px 40px);
+  box-shadow: 0 12px 60px rgba(56, 201, 255, .65), inset 0 -4px 12px rgba(0, 0, 0, .45);
+}
+
+.studio__led-spill {
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  top: 258px;
+  height: 26px;
+  background: linear-gradient(180deg, rgba(56, 201, 255, .5), rgba(56, 201, 255, 0));
+  filter: blur(7px);
+}
+
+/* ── Side walls ──────────────────────────────────────────────────────────── */
+.studio__wall {
+  position: absolute;
+  top: 210px;
+  bottom: 210px;
+  width: 300px;
+}
+
+.studio__wall--left {
+  left: 0;
+  background: linear-gradient(90deg, #0c1a72, rgba(12, 26, 114, 0));
+  transform: perspective(1100px) rotateY(34deg);
+  transform-origin: left center;
+}
+
+.studio__wall--right {
+  right: 0;
+  background: linear-gradient(270deg, #0c1a72, rgba(12, 26, 114, 0));
+  transform: perspective(1100px) rotateY(-34deg);
+  transform-origin: right center;
+}
+
+.studio__rail {
+  position: absolute;
+  height: 22px;
+  top: 300px;
+  width: 320px;
+  filter: blur(2px);
+  opacity: .7;
+}
+
+.studio__rail--left { left: 0; background: linear-gradient(90deg, #ffb43c, rgba(255, 180, 60, 0)); }
+.studio__rail--right { right: 0; background: linear-gradient(270deg, #ffb43c, rgba(255, 180, 60, 0)); }
+
+.studio__rail--left-low,
+.studio__rail--right-low {
+  top: 372px;
+  width: 260px;
+  height: 12px;
+  filter: blur(3px);
+  opacity: .45;
+}
+
+.studio__rail--left-low { left: 0; background: linear-gradient(90deg, #ffd98a, rgba(255, 217, 138, 0)); }
+.studio__rail--right-low { right: 0; background: linear-gradient(270deg, #ffd98a, rgba(255, 217, 138, 0)); }
+
+/* ── Columns ─────────────────────────────────────────────────────────────── */
+.studio__column {
+  position: absolute;
+  top: 268px;
+  bottom: 128px;
+  width: 156px;
+}
+
+.studio__column--left { left: 40px; }
+.studio__column--right { right: 40px; }
+
+/* Bronze mouldings, lit from above. */
+.studio__abacus {
+  position: absolute;
+  left: -6px;
+  right: -6px;
+  top: 0;
+  height: 16px;
+  background: linear-gradient(180deg, #f3dca6, #b98a3c 55%, #6d4d17);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, .55);
+}
+
+.studio__echinus {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 16px;
+  height: 26px;
+  clip-path: polygon(0 0, 100% 0, 88% 100%, 12% 100%);
+  background: linear-gradient(180deg, #e7cd94, #a97f37 60%, #5f4413);
+}
+
+.studio__necking,
+.studio__astragal {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  height: 12px;
+  background: linear-gradient(180deg, #d9bd82, #7c5a1f);
+}
+
+.studio__necking { top: 42px; }
+.studio__astragal { bottom: 50px; }
+
+/* Fluted shaft: the flutes are a repeating gradient, the roundness is a second
+   pass of light and shade over the top. */
+.studio__shaft,
+.studio__shaft-shade {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  top: 54px;
+  bottom: 62px;
+}
+
+.studio__shaft {
+  background: linear-gradient(90deg, #072a4f 0 4px, #0d3a6e 4px 10px, #2f9fe0 10px 16px, #b8f2ff 16px 20px, #2f9fe0 20px 26px, #10528f 26px 34px);
+  background-size: 34px 100%;
+  box-shadow: inset 0 0 70px rgba(255, 255, 255, .4), 0 0 80px rgba(56, 201, 255, .55);
+}
+
+.studio__shaft-shade {
+  background: linear-gradient(90deg, rgba(0, 0, 0, .55) 0%, rgba(255, 255, 255, .5) 24%, rgba(255, 255, 255, .08) 52%, rgba(0, 0, 0, .5) 100%);
+}
+
+.studio__column--right .studio__shaft {
+  background: linear-gradient(270deg, #072a4f 0 4px, #0d3a6e 4px 10px, #2f9fe0 10px 16px, #b8f2ff 16px 20px, #2f9fe0 20px 26px, #10528f 26px 34px);
+  background-size: 34px 100%;
+}
+
+.studio__column--right .studio__shaft-shade {
+  background: linear-gradient(270deg, rgba(0, 0, 0, .55) 0%, rgba(255, 255, 255, .5) 24%, rgba(255, 255, 255, .08) 52%, rgba(0, 0, 0, .5) 100%);
+}
+
+.studio__torus {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 26px;
+  height: 26px;
+  border-radius: 8px / 14px;
+  background: linear-gradient(180deg, #f0d79c, #ab8138 60%, #5d4113);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, .5);
+}
+
+.studio__plinth {
+  position: absolute;
+  left: -8px;
+  right: -8px;
+  bottom: 0;
+  height: 26px;
+  background: linear-gradient(180deg, #cfb178, #6d4d17);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, .65);
+}
+
+/* ── Floor ───────────────────────────────────────────────────────────────── */
+.studio__floor {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 146px;
+  overflow: hidden;
+  perspective: 700px;
+  perspective-origin: 50% -60%;
+  background: linear-gradient(180deg, rgba(6, 10, 60, 0) 0%, #0c1f74 22%, #050c33 100%);
+}
+
+/* Receding floor lines: the strongest cheap depth cue in the whole set. */
+.studio__floor-grid {
+  position: absolute;
+  left: -30%;
+  right: -30%;
+  top: 0;
+  height: 420px;
+  transform: rotateX(74deg);
+  transform-origin: 50% 0%;
+  background: repeating-linear-gradient(90deg, rgba(120, 200, 255, .16) 0 2px, rgba(0, 0, 0, 0) 2px 80px);
+  opacity: .75;
+}
+
+/* The board's own light, bounced off the floor in front of it. */
+.studio__floor-bounce {
+  position: absolute;
+  left: 232px;
+  right: 232px;
+  top: 0;
+  height: 74px;
+  background: linear-gradient(180deg, rgba(43, 55, 255, .35), rgba(43, 55, 255, 0));
+  filter: blur(8px);
+}
+
+.studio__glow {
+  position: absolute;
+  left: -14%;
+  right: -14%;
+  border-radius: 50%;
+}
+
+.studio__glow--1 {
+  bottom: 58px;
+  height: 34px;
+  background: linear-gradient(90deg, rgba(56, 201, 255, 0), #38c9ff 26%, #b8f2ff 52%, #38c9ff 74%, rgba(56, 201, 255, 0));
+  filter: blur(3px);
+  box-shadow: 0 0 80px rgba(56, 201, 255, .85);
+}
+
+.studio__glow--2 {
+  bottom: 24px;
+  height: 22px;
+  background: linear-gradient(90deg, rgba(56, 201, 255, 0), #1e8fd0 30%, #7ce6ff 55%, rgba(56, 201, 255, 0));
+  filter: blur(6px);
+}
+
+.studio__glow--3 {
+  bottom: 2px;
+  height: 14px;
+  background: linear-gradient(90deg, rgba(255, 120, 40, 0), #ff9a3c 42%, rgba(255, 120, 40, 0));
+  filter: blur(5px);
+  opacity: .8;
+}
+
+/* ── The two views ───────────────────────────────────────────────────────── */
+/* The board stays mounted in both views; only its geometry moves, so switching
+   mid-clue never restarts a countdown or remounts the grid. */
+/* Only the transition is taken from the design package here. The board is
+   already `position: absolute; inset: 0; z-index: 1` above, which fills the
+   stage and sits over the set at z-index 0; the package's `position: relative`
+   would drop it into normal flow and collapse it to content height. */
+.board {
+  transition: padding .65s cubic-bezier(.4, 0, .2, 1), gap .65s ease;
+}
+
+.board__grid,
+.score-strip {
+  transition: padding .65s ease, box-shadow .65s ease, background .65s ease, height .65s ease;
+}
+
+.board__tile,
+.board__category {
+  transition: font-size .65s cubic-bezier(.4, 0, .2, 1);
+}
+
+/* Board-only: the grid takes the whole TV, which is what the room wants when
+   it is reading values off the back wall. */
+.stage--plain .board { padding: 28px 32px 32px; }
+
+/* Studio: the board is pushed back into the set and framed like a real screen.
+   It costs roughly a fifth of the grid area — hence the smaller numerals. */
+.stage--scene .board {
+  padding: 292px 232px 150px;
+  gap: 22px;
+}
+
+.stage--scene .board__grid {
+  padding: 21px;
+  background:
+    linear-gradient(#05070f, #05070f) content-box,
+    linear-gradient(180deg, #3a3c46, #16161d) border-box;
+  box-shadow:
+    0 44px 100px rgba(0, 0, 0, .8),
+    inset 0 2px 0 rgba(255, 255, 255, .18),
+    inset 0 -2px 0 rgba(0, 0, 0, .6);
+  gap: 6px;
+}
+
+/* The package's studio scale assumed a tile that was only a number. Ours
+   stacks the value over its buy-in, so the pair has to fit the row together:
+   at the package's 58px the two needed 86px in a 60px row and the sips line
+   was clipped off. Measured against the real grid — 44 + 2 + 18 in 67px.
+   The header row gives most of that height back; 132px was sized for 44px
+   category type, not the 30px the set uses. */
+.stage--scene .board__grid { --jp-head-row: 96px; }
+.stage--scene .board__tile { font-size: 44px; }
+.stage--scene .board__tile-sips { font-size: 15px; }
+.stage--scene .board__category { font-size: 30px; }
+/* Same story in the strip: 112px has to hold the reserved VELGER band, the
+   name, the score and a 10px bottom border. The package's 28/44 needed 131px
+   and squeezed the team name to nothing, so the set showed five bare numbers.
+   The score gets an explicit line-height because Anton's natural line box is
+   ~1.5× its font size, which is most of the overflow on its own. */
+.stage--scene .score-strip { height: 112px; }
+.stage--scene .score-strip__team { padding: 24px 0 6px; gap: 4px; }
+.stage--scene .score-strip__team--turn::before { top: 3px; font-size: 15px; }
+.stage--scene .score-strip__name { font-size: 22px; }
+.stage--scene .score-strip__score { font-size: 42px; line-height: 1; }
+
+/* The clue and final screens fill the framed area too, so the set does not
+   suddenly disappear when a tile opens. */
+.stage--scene .clue,
+.stage--scene .final { box-shadow: 0 44px 100px rgba(0, 0, 0, .8), inset 0 0 200px rgba(0, 0, 0, .55); }
+
+/* ── The reveal picture ──────────────────────────────────────────────────── */
+/* Swapping the crop for the whole picture once the answer is out. The <img> is
+   keyed in ImageBoard so React replaces the element, which is what lets this
+   animation run at all — mutating src on the same node would pop. */
+.clue__image--reveal .clue__image-photo {
+  animation: jp-reveal .5s cubic-bezier(.2, .8, .3, 1) both;
+}
+
+.clue__image--reveal .clue__image-backdrop {
+  transition: background-image .5s ease;
+}
+
+@keyframes jp-reveal {
+  from { opacity: 0; transform: scale(1.06); }
+  to { opacity: 1; transform: none; }
+}
+
+/* The prompt was written to sit over a crop. Over the reveal it is usually
+   covering the face the room is trying to look at, so it steps back rather
+   than disappearing — the question is still worth having on screen. */
+.clue__image--reveal .clue__image-caption {
+  font-size: 34px;
+  opacity: .82;
+  padding-top: 40px;
+}
+
+/* ── Host: leaving the lobby ─────────────────────────────────────────────── */
+/* Only on screen while the lobby is up, and the loudest thing on the tab while
+   it is: the room is waiting and the host should not be hunting for it. */
+.brett__start {
+  margin-bottom: 18px;
+  padding: 16px 14px 14px;
+  background: linear-gradient(180deg, rgba(255, 204, 0, .14), rgba(0, 0, 0, .32));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .14),
+    0 0 0 1px rgba(255, 204, 0, .28);
+}
+
+.brett__start-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.brett__start-head h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 18px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--gold-bright);
+}
+
+.brett__start-count {
+  font-size: 13px;
+  color: var(--ink-dim);
+}
+
+/* Taller than an ordinary button: this one is pressed once, in a dark room,
+   in front of people. */
+.brett__start-btn {
+  min-height: 76px;
+  font-size: 24px;
+}
+
+.brett__start-note {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ink-dim);
+}
+
+/* ── Host: Storskjerm control ────────────────────────────────────────────── */
+.brett__screen {
+  margin-bottom: 18px;
+  padding: 14px;
+  background: rgba(0, 0, 0, .32);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1);
+}
+
+.brett__screen-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.brett__screen-head h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 17px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--gold-bright);
+}
+
+.brett__screen-now { font-size: 12px; color: var(--ink-dim); }
+
+.brett__screen-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.brett__screen-btn {
+  min-height: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: 0;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .18);
+  color: var(--ink-dim);
+  font-family: var(--font-display);
+  font-size: 17px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  transition: background .3s ease, color .3s ease, box-shadow .3s ease;
+}
+
+.brett__screen-btn span {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: 0;
+  text-transform: none;
+  opacity: .75;
+}
+
+.brett__screen-btn--active {
+  background: linear-gradient(180deg, #ffe89a, #ffcc00 60%, #e0a92f);
+  box-shadow: 0 4px 0 #8a6410;
+  color: #1a1200;
+}
+
+.brett__screen-note {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ink-dim);
+}

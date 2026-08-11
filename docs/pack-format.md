@@ -36,7 +36,7 @@ front of thirty people.
         {
           "name": "Emoji-oversettelse",
           "clues": [
-            { "tier": 1, "answer": "Løvenes konge", "payload": { "kind": "emoji", "prompt": "🦁👑" } },
+            { "tier": 1, "answer": "Ringenes herre", "payload": { "kind": "emoji", "prompt": "💍🌋" } },
             { "tier": 2, "answer": "Titanic",       "payload": { "kind": "text",  "prompt": "Hvilken film …" } }
           ]
         }
@@ -105,3 +105,24 @@ without re-importing the pack.
 
 Attaching an `image` to a non-`image` clue is an error, not a no-op — it almost always means the
 `kind` is wrong.
+
+### `revealImage` — the whole picture
+
+An image clue may carry a second picture, shown on the TV **once the answer is out** — the face
+behind the cropped eyes, the building behind the detail. Optional everywhere: without it the reveal
+is exactly as it was.
+
+```jsonc
+{
+  "tier": 1,
+  "answer": "Fridtjof Nansen",
+  "payload": { "kind": "image", "prompt": "Hvem er dette?" },
+  "image":       { "mime": "image/jpeg", "base64": "…" },   // the crop — the question
+  "revealImage": { "mime": "image/jpeg", "base64": "…" }    // the whole picture — the answer
+}
+```
+
+The board only requests it in the `revealed` and `done` phases, so it cannot appear early — a clue
+carrying *only* a `revealImage` shows "bildet mangler" while the question is live. Both pictures are
+prefetched while the grid is on screen, because the reveal lands seconds after an answer and there
+is no time to download it then. `revealImage` never blocks publishing; only a missing `image` does.
