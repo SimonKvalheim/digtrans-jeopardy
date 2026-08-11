@@ -6,12 +6,10 @@ import type {
 } from '../../shared/board-state.ts'
 import { sipsForTier, valueForTier } from '../../shared/scoring.ts'
 import type { Tier } from '../../shared/pack-schema.ts'
+import { isAnswerOut } from '../../shared/clue-phases.ts'
 import { db, schema } from '../db/index.ts'
 import { applyExpiry } from './loop.ts'
 import { buzzOrder } from './buzz.ts'
-
-/** A tile is spent once its clue has been resolved one way or another. */
-const SPENT_PHASES = new Set(['revealed', 'done'])
 
 /**
  * Presence, never the bytes. The board polls this whole payload every two
@@ -117,7 +115,9 @@ export async function buildBoardState(code: string): Promise<BoardState | null> 
           tier: row.tier,
           value: valueForTier(row.tier as Tier, activeRound.valueStep),
           sips: sipsForTier(row.tier as Tier, drinkScale),
-          spent: SPENT_PHASES.has(row.phase),
+          // A tile is spent once its clue has been resolved one way or another
+          // — the same condition that makes its answer public.
+          spent: isAnswerOut(row.phase),
           hasImage: Boolean(row.hasImage),
           hasRevealImage: Boolean(row.hasRevealImage),
         })

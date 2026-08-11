@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import type { BoardState } from '@shared/board-state.ts'
 import type { ClueKind } from '@shared/clue-kinds.ts'
+import { isAnswerOut } from '@shared/clue-phases.ts'
 import type { HostActiveClue } from './host/api.ts'
 import { FitText } from './board/FitText.tsx'
 
@@ -34,14 +35,8 @@ export function clueRevealImageUrl(gameClueId: string): string {
   return `/api/media/${gameClueId}/reveal`
 }
 
-/**
- * Phases in which the answer is already public: `revealed` is nobody getting
- * it, `done` is somebody getting it. The tile stays on screen through both
- * until the host closes it, and the room wants the full picture in either.
- */
-export function isAnswerOut(phase: string): boolean {
-  return phase === 'revealed' || phase === 'done'
-}
+// Re-exported: the definition moved to shared once the server needed it too.
+export { isAnswerOut }
 
 function TextBoard({ clue }: { clue: BoardClue }) {
   return <FitText className="clue__prompt" text={clue.prompt} max={92} min={38} />
