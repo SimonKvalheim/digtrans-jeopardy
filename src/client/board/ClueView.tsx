@@ -1,7 +1,8 @@
 import { useLayoutEffect, useRef } from 'react'
 import type { BoardState } from '@shared/board-state.ts'
 import { Countdown } from './Countdown.tsx'
-import { clueKindFor } from '../clue-kinds.tsx'
+import { clueKindFor, isRevealing } from '../clue-kinds.tsx'
+import { FitText } from './FitText.tsx'
 import { stageScale, tileRect } from './tile-rects.ts'
 import { teamAccent } from './team-colours.ts'
 
@@ -83,6 +84,7 @@ export function ClueView({
     clue.wager === owner.score
 
   const KindBoard = clueKindFor(clue.kind).Board
+  const revealing = isRevealing(clue)
 
   // The buzz flash takes the winning team's colour, so the room can see who
   // got it from the far side without reading a word (PRD §8.4).
@@ -93,7 +95,7 @@ export function ClueView({
       ref={ref}
       className={`clue clue--${clue.kind}${
         clue.stealWinner ? ' clue--buzzed' : ''
-      }`}
+      }${revealing ? ' clue--revealed' : ''}`}
       style={{ '--team-accent': teamAccent(stealer?.seat) } as React.CSSProperties}
     >
       <div className="clue__header">
@@ -116,6 +118,19 @@ export function ClueView({
       ) : null}
 
       <KindBoard clue={clue} />
+
+      {/* The whole point of the change: the answer was only ever spoken, and a
+          room of thirty with drinks in hand does not reliably hear it. FitText
+          because the stage is a fixed 1920×1080 with overflow hidden — a long
+          answer would be clipped in front of everyone rather than wrap. */}
+      {revealing ? (
+        <FitText
+          className="clue__answer"
+          text={clue.answer}
+          max={96}
+          min={40}
+        />
+      ) : null}
 
       {/* The margin is shown on purpose: it is what stops the argument. */}
       {clue.stealWinner ? (

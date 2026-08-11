@@ -38,6 +38,24 @@ export function clueRevealImageUrl(gameClueId: string): string {
 // Re-exported: the definition moved to shared once the server needed it too.
 export { isAnswerOut }
 
+/**
+ * Whether the card is in its reveal state, narrowing `answer` to a string.
+ *
+ * A type predicate rather than a plain boolean so one check does both jobs: the
+ * caller gets the layout flag and the non-null answer off the same line, rather
+ * than testing the same fact twice to satisfy the compiler.
+ *
+ * Equivalent in practice to `isAnswerOut(clue.phase)` — the server reads phase
+ * and answer off one row, and `clues.answer` is not null. Reach for this one
+ * when the answer text is about to be rendered, and for `isAnswerOut` when only
+ * the phase matters.
+ */
+export function isRevealing(
+  clue: BoardClue,
+): clue is BoardClue & { answer: string } {
+  return clue.answer !== null
+}
+
 function TextBoard({ clue }: { clue: BoardClue }) {
   return <FitText className="clue__prompt" text={clue.prompt} max={92} min={38} />
 }
@@ -72,6 +90,10 @@ function ImageBoard({ clue }: { clue: BoardClue }) {
   // Once the answer is out, the crop has done its job and the room wants the
   // whole picture. A missing or broken reveal falls back to the crop rather
   // than to nothing — the question image is always the safe thing to show.
+  //
+  // Gated on the phase, not on `isRevealing`: the swap belongs to the room
+  // once the clue is publicly resolved, not to the coincidence that the
+  // answer field is populated.
   const revealing =
     isAnswerOut(clue.phase) && clue.hasRevealImage && !revealFailed
   const src = revealing ? clueRevealImageUrl(clue.id) : clueImageUrl(clue.id)
