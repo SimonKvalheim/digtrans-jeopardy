@@ -50,7 +50,8 @@ function useZoomFromTile(gameClueId: string) {
 }
 
 /**
- * The open tile, full-bleed on the TV. Carries the prompt and never the answer.
+ * The open tile, full-bleed on the TV. Carries the prompt, and the answer once
+ * the server has decided the clue is over and sent one.
  *
  * What sits in the middle comes from the clue-kind registry, so adding a kind
  * is a renderer and not an edit here (PRD §6.4).

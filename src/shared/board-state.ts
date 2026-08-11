@@ -67,8 +67,9 @@ export interface BoardState {
   /** Sips per tier, indexed by tier - 1. Displayed, never tracked. */
   drinkScale: number[]
   /**
-   * The tile currently open, if any. Carries the prompt but deliberately not
-   * the answer — the TV shows the question, the host console shows the key.
+   * The tile currently open, if any. Carries the prompt, and the answer only
+   * once the clue is over — while it is still live the TV shows the question
+   * and the host console shows the key.
    */
   activeClue: {
     id: string

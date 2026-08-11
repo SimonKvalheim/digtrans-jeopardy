@@ -4,8 +4,13 @@ import { finalState } from '../game/final.ts'
 
 /**
  * Read-only and unauthenticated on purpose: the TV is a borrowed laptop that
- * nobody wants to type a PIN into, and buildBoardState deliberately returns no
- * clue text and no answers.
+ * nobody wants to type a PIN into.
+ *
+ * What that costs: everything this route returns is readable by anyone who can
+ * guess a four-letter code, so buildBoardState returns no clue text for a tile
+ * that has not been opened, and no answer for a clue that is not already over.
+ * The one gate that matters is in buildActiveClue — a clue in `steal_open` is
+ * one a team is still allowed to answer.
  */
 export const boardRouter = Router()
 
